@@ -1,19 +1,26 @@
+"""
+Core templating functions.
+
+This module provides the `process_text()` function that resolves template tags in a text string.
+It supports two modes:
+  - "normal": In pure placeholder mode, if the resolved value is a list, it is joined using a delimiter.
+             In mixed text mode, placeholders must resolve to non-list values.
+  - "table": In pure placeholder mode, if the resolved value is a list, a list of strings is returned
+             (one for each item). In mixed mode, the text must contain exactly one placeholder, and the result
+             will be a list of strings (one per list element).
+
+Permission checking is performed on every resolved placeholder via the helper function
+`enforce_permissions()`. In this design, permission is enforced only if `check_permissions` is True and a
+`request_user` is provided. If permission fails, an error is recorded and the value is replaced by an empty string.
+
+The module delegates expression resolution to `resolve_tag_expression()` from the parser module and
+date formatting conversion to `convert_format()` from the formatting module.
+"""
+
 import re
 from .parser import resolve_tag_expression
 from .formatting import convert_format
-
-
-def has_view_permission(obj, request_user):
-    """
-    Checks if request_user has permission to view obj.
-    If obj appears to be a Django model instance (has a _meta attribute),
-    returns request_user.has_perm("view", obj); otherwise, returns True.
-    """
-    if request_user is None:
-        return False
-    if hasattr(obj, "_meta"):
-        return request_user.has_perm("view", obj)
-    return False
+from .permissions import enforce_permissions
 
 
 def process_text(
@@ -26,40 +33,55 @@ def process_text(
     delimiter=", ",
 ):
     """
-    Process text containing template tags.
+    Process text containing template tags delimited by {{ and }}.
 
-    Modes:
-      - mode="normal":
-          * If the entire text is a pure placeholder (i.e. the trimmed text starts with "{{" and ends with "}}"
-            and contains exactly one pair of braces), then:
-              - Resolve the placeholder.
-              - If it resolves to a list, join its items with the delimiter.
-              - Otherwise, return the resolved value.
-          * If the text is mixed, substitute each placeholder. If any placeholder resolves to a list,
-            raise a ValueError.
-      - mode="table":
-          * In pure mode, if the placeholder resolves to a list, return a list of strings (one per item).
-            Otherwise, return the string.
-          * In mixed mode, require exactly one placeholder and return a list of strings (one per list item).
+    The function distinguishes between "pure" placeholders (where the trimmed text is exactly one placeholder)
+    and mixed text (where the placeholder is embedded in other text). Two modes are supported:
 
-    Permission checking:
-      For each placeholder, if check_permissions is True and request_user is provided,
-      then:
-        - If the resolved value is a list, filter it with has_view_permission.
-          If any items are denied, record an error.
-        - If it’s a single object and permission fails, record an error and return an empty string.
+    - mode "normal":
+        * In pure mode, if the resolved value is a list, its items are joined with `delimiter`.
+          Otherwise, the value is returned.
+        * In mixed text mode, if any placeholder resolves to a list, a ValueError is raised.
+    - mode "table":
+        * In pure mode, if the resolved value is a list, a list of strings is returned.
+          Otherwise, the string representation is returned.
+        * In mixed mode, the text must contain exactly one placeholder; the result is a list of strings,
+          one for each element if the placeholder resolves to a list, or a singleton list otherwise.
 
-    Note: No joining is performed in table mode.
+    Permission Checking:
+      For each placeholder, if check_permissions is True and request_user is provided, the resolved value
+      is filtered using `enforce_permissions()`. If permission fails, an error message is added to `errors`
+      and the value is replaced by an empty string.
+
+    Args:
+      text (str): The input text to process.
+      context (dict): Mapping of variable names to values.
+      errors (list, optional): List for collecting error messages.
+      request_user: The user object for permission checking.
+      check_permissions (bool): Whether to enforce permission checks.
+      mode (str): Either "normal" or "table" (default "normal").
+      delimiter (str): Delimiter for joining list values in "normal" pure mode.
+
+    Returns:
+      Processed text (str) in normal mode, or a list of strings in table mode (if applicable).
+
+    Raises:
+      ValueError: In mixed text mode if a placeholder resolves to a list (in normal mode) or if table mode mixed text
+                  does not contain exactly one placeholder.
     """
-    pure = text.strip()
-    # Pure placeholder if it starts with "{{" and ends with "}}" and contains exactly one pair.
-    if (
-        pure.startswith("{{")
-        and pure.endswith("}}")
-        and pure.count("{{") == 1
-        and pure.count("}}") == 1
-    ):
-        raw_expr = pure[2:-2].strip()
+    pure_text = text.strip()
+    # Determine if the entire text is a pure placeholder.
+    is_pure = (
+        pure_text.startswith("{{")
+        and pure_text.endswith("}}")
+        and pure_text.count("{{") == 1
+        and pure_text.count("}}") == 1
+    )
+
+    if is_pure:
+        # Extract the expression inside the braces.
+        raw_expr = pure_text[2:-2].strip()
+        # Handle formatting with a pipe (e.g., "{{ now|MMM dd, YYYY }}").
         if "|" in raw_expr:
             parts = raw_expr.split("|", 1)
             value_expr = parts[0].strip()
@@ -73,31 +95,13 @@ def process_text(
                     if errors is not None:
                         errors.append(raw_expr)
                     return ""
-            # else, leave value as is.
+            # If not a date, leave value as is.
         else:
             value = resolve_tag_expression(raw_expr, context)
-        # Permission check:
-        if check_permissions and request_user is not None:
-            if isinstance(value, list):
-                permitted = [
-                    item for item in value if has_view_permission(item, request_user)
-                ]
-                not_permitted = [
-                    item for item in value if not has_view_permission(item, request_user)
-                ]
-                if not_permitted:
-                    if errors is not None:
-                        errors.append(
-                            f"Permission denied for expression '{raw_expr}': {not_permitted}"
-                        )
-                value = permitted
-            else:
-                if not has_view_permission(value, request_user):
-                    if errors is not None:
-                        errors.append(
-                            f"Permission denied for expression '{raw_expr}': {value}"
-                        )
-                    value = ""
+        # Apply permission checking.
+        value = enforce_permissions(
+            value, raw_expr, errors, request_user, check_permissions
+        )
         # Return based on mode.
         if mode == "normal":
             if isinstance(value, list):
@@ -110,7 +114,7 @@ def process_text(
             else:
                 return str(value)
     else:
-        # Mixed text.
+        # Mixed text mode.
         if mode == "table":
             placeholders = re.findall(r"\{\{(.*?)\}\}", text)
             if len(placeholders) != 1:
@@ -119,31 +123,11 @@ def process_text(
                 )
             raw_expr = placeholders[0].strip()
             value = resolve_tag_expression(raw_expr, context)
-            if check_permissions and request_user is not None:
-                if isinstance(value, list):
-                    permitted = [
-                        item for item in value if has_view_permission(item, request_user)
-                    ]
-                    not_permitted = [
-                        item
-                        for item in value
-                        if not has_view_permission(item, request_user)
-                    ]
-                    if not_permitted:
-                        if errors is not None:
-                            errors.append(
-                                f"Permission denied for expression '{raw_expr}': {not_permitted}"
-                            )
-                    value = permitted
-                else:
-                    if not has_view_permission(value, request_user):
-                        if errors is not None:
-                            errors.append(
-                                f"Permission denied for expression '{raw_expr}': {value}"
-                            )
-                        value = ""
+            value = enforce_permissions(
+                value, raw_expr, errors, request_user, check_permissions
+            )
             if not isinstance(value, list):
-
+                # Replace the placeholder inline.
                 def replacer(match):
                     return str(resolve_tag_expression(match.group(1).strip(), context))
 
@@ -157,36 +141,14 @@ def process_text(
 
                     results.append(re.sub(r"\{\{(.*?)\}\}", replacer, text))
                 return results
-        else:
+        else:  # Normal mixed text mode.
 
             def replacer(match):
                 raw_expr = match.group(1).strip()
                 val = resolve_tag_expression(raw_expr, context)
-                if check_permissions and request_user is not None:
-                    if isinstance(val, list):
-                        permitted = [
-                            item
-                            for item in val
-                            if has_view_permission(item, request_user)
-                        ]
-                        not_permitted = [
-                            item
-                            for item in val
-                            if not has_view_permission(item, request_user)
-                        ]
-                        if not_permitted:
-                            if errors is not None:
-                                errors.append(
-                                    f"Permission denied for expression '{raw_expr}': {not_permitted}"
-                                )
-                        val = permitted
-                    else:
-                        if not has_view_permission(val, request_user):
-                            if errors is not None:
-                                errors.append(
-                                    f"Permission denied for expression '{raw_expr}': {val}"
-                                )
-                            val = ""
+                val = enforce_permissions(
+                    val, raw_expr, errors, request_user, check_permissions
+                )
                 if isinstance(val, list):
                     raise ValueError(
                         f"Cannot render list in mixed text in normal mode: {match.group(0)}"
