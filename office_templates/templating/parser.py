@@ -5,30 +5,19 @@ from .resolver import get_nested_attr, evaluate_condition, parse_value
 
 def resolve_tag_expression(expr, context):
     """
-    Resolve an expression (e.g., "user.name" or "program.users[is_active=True].email") using the context.
+    Resolve a dotted expression (e.g. "user.name" or "program.users[is_active=True].email")
+    using the given context.
 
-    Special-case: if the first segment is "now", return datetime.datetime.now().
-    For objects that are Django managers or querysets (have an "all" method), call .all() first.
-
-    Args:
-      expr (str): The expression string.
-      context (dict): The context mapping variable names to values.
-
-    Returns:
-      The resolved value.
+    Special-case: if the first segment is "now", returns the current datetime.
     """
     segments = split_expression(expr)
     if not segments:
         return ""
     if segments[0] == "now":
-        current = datetime.datetime.now()
-    else:
-        current = context.get(segments[0])
+        return datetime.datetime.now()
+    current = context.get(segments[0])
     if current is None:
         return ""
-    # If current is a Django manager/queryset, call .all() to get a QuerySet.
-    if hasattr(current, "all") and callable(current.all):
-        current = current.all()
     for seg in segments[1:]:
         current = resolve_segment(current, seg)
         if current is None:
@@ -38,33 +27,24 @@ def resolve_tag_expression(expr, context):
 
 def split_expression(expr):
     """
-    Split the expression by periods, ignoring periods inside square brackets.
+    Split an expression into segments by periods, ignoring periods within square brackets.
+
     For example, "program.users[is_active=True].email" becomes:
-       ['program', 'users[is_active=True]', 'email']
-
-
-    Args:
-      expr (str): The expression string.
-
-    Returns:
-      list of str: The expression segments.
+         ["program", "users[is_active=True]", "email"]
     """
     return re.split(r"\.(?![^\[]*\])", expr)
 
 
 def resolve_segment(current, segment):
     """
-    Resolve one segment of an expression.
+    Resolve one segment of a dotted expression.
 
-    The segment can have an optional filter, e.g. "users[is_active=True]".
-    If current is a Django queryset (has filter), call filter(**filter_dict) after obtaining the attribute.
+    The segment can optionally include a filter in square brackets, e.g.
+         "users[is_active=True]"
+    For Django-like querysets (objects with a filter() method), we call filter(**filter_dict).
+    For other objects, if a filter is provided, we apply manual filtering.
 
-    Args:
-      current: The current object.
-      segment (str): The segment to resolve.
-
-    Returns:
-      The resolved attribute or filtered value.
+    If current is a list, apply resolution to each element (and flatten the result).
     """
     m = re.match(r"(\w+(?:__\w+)*)(\[(.*?)\])?$", segment)
     if not m:
@@ -72,48 +52,45 @@ def resolve_segment(current, segment):
     attr_name = m.group(1)
     filter_expr = m.group(3)
 
-    # For Django querysets, if current has a "filter" method, we assume we can use it.
-    if hasattr(current, "filter") and callable(current.filter):
-        # Get the attribute from each object? In a queryset, accessing a related field
-        # is handled by Django’s ORM. So first, get the queryset corresponding to attr_name.
-        qs = getattr(current, attr_name, None)
-        if qs is None:
-            # Try treating current as a model instance.
-            qs = get_nested_attr(current, attr_name)
-        else:
-            # If qs is a manager, get the queryset.
-            if hasattr(qs, "all") and callable(qs.all):
-                qs = qs.all()
-        # If a filter is provided, parse it into a dict and apply.
+    # If current is a list, map resolution to each element.
+    if isinstance(current, (list, tuple)):
+        results = []
+        for item in current:
+            res = resolve_segment(item, segment)
+            if isinstance(res, (list, tuple)):
+                results.extend(res)
+            else:
+                results.append(res)
+        return results
+
+    # Get the attribute from the current object.
+    value = get_nested_attr(current, attr_name)
+
+    # If the value is a Django-like queryset (has filter method), use it.
+    if value is not None and hasattr(value, "filter") and callable(value.filter):
         if filter_expr:
             filter_dict = {}
             conditions = [cond.strip() for cond in filter_expr.split(",")]
             for cond in conditions:
                 m2 = re.match(r"([\w__]+)\s*=\s*(.+)", cond)
-                if not m2:
-                    continue
-                key, val = m2.groups()
-                # Remove surrounding quotes if present.
-                if (val.startswith('"') and val.endswith('"')) or (
-                    val.startswith("'") and val.endswith("'")
-                ):
-                    val = val[1:-1]
-                filter_dict[key] = val
-            qs = qs.filter(**filter_dict)
-        return qs
+                if m2:
+                    key, val = m2.groups()
+                    if (val.startswith('"') and val.endswith('"')) or (
+                        val.startswith("'") and val.endswith("'")
+                    ):
+                        val = val[1:-1]
+                    filter_dict[key] = val
+            value = value.filter(**filter_dict)
+        return value
     else:
-        # For non-queryset objects.
-        if isinstance(current, (list, tuple)):
-            values = [get_nested_attr(item, attr_name) for item in current]
-        else:
-            values = get_nested_attr(current, attr_name)
+        # For non-queryset objects, if a filter is provided, apply it manually.
         if filter_expr:
-            if not isinstance(values, list):
-                values = [values]
+            if not isinstance(value, list):
+                value = [value]
             conditions = [cond.strip() for cond in filter_expr.split(",")]
-            values = [
+            value = [
                 item
-                for item in values
+                for item in value
                 if all(evaluate_condition(item, cond) for cond in conditions)
             ]
-        return values
+        return value
