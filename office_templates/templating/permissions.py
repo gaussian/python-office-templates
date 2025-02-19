@@ -2,6 +2,8 @@
 Permissions utility module for the templating system.
 """
 
+from template_reports.pptx_renderer.exceptions import PermissionDeniedException
+
 
 def is_django_object(obj):
     return hasattr(obj, "_meta")
@@ -9,9 +11,9 @@ def is_django_object(obj):
 
 def has_view_permission(obj, request_user):
     """
-    If request_user is None, return False.
-    For Django-like objects (with _meta), return request_user.has_perm("view", obj).
-    For all other objects, return True.
+    If request_user is None, returns False.
+    For Django-like objects (with _meta), returns request_user.has_perm("view", obj).
+    For all other objects, returns True.
     """
     if request_user is None:
         return False
@@ -20,31 +22,48 @@ def has_view_permission(obj, request_user):
     return True
 
 
-def enforce_permissions(value, raw_expr, errors, request_user, check_permissions):
+def _check_permissions(item, request_user, raw_expr, raise_exception, errors):
     """
-    Enforce permission checks on the resolved value.
+    Check permission for a single item.
+    Returns a tuple (item, True) if the item passes the permission check.
+    Otherwise, returns (None, False). If raise_exception is True, raises PermissionDeniedException immediately.
+    """
+    if is_django_object(item) and not has_view_permission(item, request_user):
+        msg = f"Permission denied for expression '{raw_expr}': {item}"
+        if raise_exception:
+            raise PermissionDeniedException(msg)
+        else:
+            errors.append(msg)
+            return (None, False)
+    return (item, True)
 
-    - If check_permissions is False or no request_user, return value unmodified.
-    - If value is a list, filter out any Django-like objects for which request_user.has_perm("view", obj) is False.
-      Append an error message if any items are removed.
-    - For a single value, if it is Django-like and permission is denied, record an error and return an empty string.
+
+def enforce_permissions(
+    value, raw_expr, errors, request_user, check_permissions, raise_exception=False
+):
+    """
+    Enforce permission checks on the resolved value by delegating per-item permission logic to _check_permissions.
+
+    - If check_permissions is False or no request_user is provided, returns the value unmodified.
+    - For list values: iterates once, replaces any item failing _check_permissions (i.e. gets None) by filtering it out.
+      If any item fails, the first error message is already appended (via _check_permissions).
+    - For a single value: returns "" if _check_permissions returns None.
     """
     if not check_permissions or request_user is None:
         return value
+
+    # If value is a list, check each item.
     if isinstance(value, list):
-        permitted = [
-            item
-            for item in value
-            if (not is_django_object(item)) or has_view_permission(item, request_user)
-        ]
-        if any(
-            is_django_object(item) and not has_view_permission(item, request_user)
-            for item in value
-        ):
-            errors.append(f"Permission denied for expression '{raw_expr}': {value}")
+        permitted = []
+        for item in value:
+            res, success = _check_permissions(
+                item, request_user, raw_expr, raise_exception, errors
+            )
+            if success:
+                permitted.append(res)
         return permitted
     else:
-        if is_django_object(value) and not has_view_permission(value, request_user):
-            errors.append(f"Permission denied for expression '{raw_expr}': {value}")
-            return ""
-        return value
+        res, success = _check_permissions(
+            value, request_user, raw_expr, raise_exception, errors
+        )
+        return res if success else ""
