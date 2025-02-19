@@ -10,25 +10,27 @@ Permission checking is enforced via enforce_permissions().
 """
 
 import re
-from .resolver import parse_formatted_tag, resolve_tag_expression
+from .parser import parse_formatted_tag
 from .permissions import enforce_permissions
 
 
-def _process_match(raw_expr, context, errors, request_user, check_permissions):
+def _process_match(raw_expr, context, request_user, check_permissions):
     """
     Helper to resolve a single tag expression with formatting and enforce permissions.
     Returns the final resolved value.
     """
-    value = parse_formatted_tag(raw_expr, context, errors)
+    value = parse_formatted_tag(raw_expr, context)
     return enforce_permissions(
-        value, raw_expr, errors, request_user, check_permissions, raise_exception=True
+        value,
+        raw_expr,
+        request_user,
+        check_permissions,
     )
 
 
 def process_text(
     text,
     context,
-    errors=None,
     request_user=None,
     check_permissions=True,
     mode="normal",
@@ -46,7 +48,6 @@ def process_text(
     a list of strings is returned, where each string is the original text with that tag replaced
     by one of the list items. Otherwise, the tag is replaced inline.
     """
-    errors = errors if errors is not None else []
     pattern = re.compile(r"\{\{(.*?)\}\}")
     matches = list(pattern.finditer(text))
 
@@ -66,10 +67,17 @@ def process_text(
         start, end = m.span()
         before = text[last_index:start]
         result_parts.append(before)
+
+        # Raw match.
         raw_expr = m.group(1).strip()
 
         # Process the actual tag expression.
-        value = _process_match(raw_expr, context, errors, request_user, check_permissions)
+        value = _process_match(
+            raw_expr,
+            context,
+            request_user,
+            check_permissions,
+        )
 
         if isinstance(value, list):
             # Special case: table mode with a list value. Only one placeholder

@@ -42,7 +42,6 @@ class TestPermissions(unittest.TestCase):
         self.django_denied = DjangoObject("deny_object")
         # Deny any object whose name contains "deny".
         self.request_user = DummyRequestUser(deny_pattern="deny")
-        self.errors = []
 
     def test_is_django_object(self):
         self.assertFalse(is_django_object(self.non_django))
@@ -61,34 +60,32 @@ class TestPermissions(unittest.TestCase):
     def test_enforce_permissions_single_value(self):
         # For a non-Django object, value is returned unchanged.
         val = "test value"
-        res = enforce_permissions(val, "expr", self.errors, self.request_user, True)
+        res = enforce_permissions(val, "expr", self.request_user, True)
         self.assertEqual(res, val)
 
         # For allowed Django-like object.
         res_allowed = enforce_permissions(
-            self.django_allowed, "expr", self.errors, self.request_user, True
+            self.django_allowed, "expr", self.request_user, True
         )
         self.assertEqual(res_allowed, self.django_allowed)
 
-        # For denied Django-like object, should return empty string and log error.
+        # For denied Django-like object, should return empty string.
         res_denied = enforce_permissions(
-            self.django_denied, "expr", self.errors, self.request_user, True
+            self.django_denied, "expr", self.request_user, True
         )
         self.assertEqual(res_denied, "")
-        self.assertIn("Permission denied", self.errors[-1])
 
     def test_enforce_permissions_list(self):
         # Test on a list containing allowed and denied objects.
         values = [self.django_allowed, self.django_denied, self.non_django]
-        res = enforce_permissions(values, "expr", self.errors, self.request_user, True)
+        res = enforce_permissions(values, "expr", self.request_user, True)
         # Expect denied Django object filtered out.
         self.assertEqual(res, [self.django_allowed, self.non_django])
-        self.assertTrue(any("Permission denied" in e for e in self.errors))
 
     def test_enforce_permissions_no_check(self):
         # With check_permissions False, the value is returned unchanged.
         values = [self.django_denied]
-        res = enforce_permissions(values, "expr", self.errors, self.request_user, False)
+        res = enforce_permissions(values, "expr", self.request_user, False)
         self.assertEqual(res, values)
 
     def test_enforce_permissions_single_value_no_exception(self):
@@ -96,42 +93,36 @@ class TestPermissions(unittest.TestCase):
         res = enforce_permissions(
             self.django_denied,
             "expr",
-            self.errors,
             self.request_user,
             True,
             raise_exception=False,
         )
         self.assertEqual(res, "")
-        self.assertIn("Permission denied", self.errors[-1])
 
     def test_enforce_permissions_single_value_exception(self):
         # When permission is denied and raise_exception is True.
-        with self.assertRaises(PermissionDeniedException) as cm:
+        with self.assertRaises(PermissionDeniedException):
             enforce_permissions(
                 self.django_denied,
                 "expr",
-                self.errors,
                 self.request_user,
                 True,
                 raise_exception=True,
             )
-        self.assertIn("Permission denied", str(cm.exception))
 
     def test_enforce_permissions_list_no_exception(self):
         values = [self.django_allowed, self.django_denied, self.non_django]
         res = enforce_permissions(
-            values, "expr", self.errors, self.request_user, True, raise_exception=False
+            values, "expr", self.request_user, True, raise_exception=False
         )
         self.assertEqual(res, [self.django_allowed, self.non_django])
-        self.assertTrue(any("Permission denied" in e for e in self.errors))
 
     def test_enforce_permissions_list_exception(self):
         values = [self.django_allowed, self.django_denied, self.non_django]
-        with self.assertRaises(PermissionDeniedException) as cm:
+        with self.assertRaises(PermissionDeniedException):
             enforce_permissions(
-                values, "expr", self.errors, self.request_user, True, raise_exception=True
+                values, "expr", self.request_user, True, raise_exception=True
             )
-        self.assertIn("Permission denied", str(cm.exception))
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import unittest
 import datetime
 import re
 from unittest.mock import patch
+from template_reports.pptx_renderer.exceptions import PermissionDeniedException
 
 # Import main function from our templating module.
 from template_reports.templating.core import process_text
@@ -64,8 +65,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         }
         # Use a dummy request user that denies permission on any object whose name contains "deny".
         self.request_user = DummyRequestUser()
-        # We'll collect errors here.
-        self.errors = []
 
     # Normal mode tests.
     @patch("template_reports.templating.parser.datetime.datetime")
@@ -76,7 +75,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -93,7 +91,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -107,7 +104,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -122,45 +118,36 @@ class TestTemplatingNormalMode(unittest.TestCase):
         # In pure mode with check_permissions True, the dummy request user denies objects with "deny".
         tpl = "{{ program.users.email }}"
         # Now, with permission checking enabled, self.user3 ("DenyUser") should be filtered out.
-        result = process_text(
-            tpl,
-            self.context,
-            errors=self.errors,
-            request_user=self.request_user,
-            check_permissions=True,
-            mode="normal",
-        )
-        # Expected: joined emails of user1 and user2 only.
-        expected = ", ".join(u.email for u in [self.user1, self.user2])
-        self.assertEqual(result, expected)
-        # Also, errors should contain a permission error message.
-        self.assertTrue(any("Permission denied" in e for e in self.errors))
+        with self.assertRaises(PermissionDeniedException):
+            process_text(
+                tpl,
+                self.context,
+                request_user=self.request_user,
+                check_permissions=True,
+                mode="normal",
+            )
 
     def test_empty_placeholder(self):
         tpl = "Empty tag: {{   }}."
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
         )
         self.assertEqual(result, "Empty tag: .")
-        self.assertTrue(len(self.errors) == 0)
 
     def test_missing_key_in_context(self):
         tpl = "Missing: {{ non_existent }}."
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
         )
         self.assertEqual(result, "Missing: .")
-        self.assertTrue(len(self.errors) == 0)
 
     def test_nested_lookup_with_function(self):
         # Dynamically add a callable attribute to user1.
@@ -170,7 +157,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -182,7 +168,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -198,16 +183,14 @@ class TestTemplatingNormalMode(unittest.TestCase):
 
         denier = DenyAllUser()
         tpl = "{{ program.users.email }}"
-        result = process_text(
-            tpl,
-            self.context,
-            errors=self.errors,
-            request_user=denier,
-            check_permissions=True,
-            mode="normal",
-        )
-        self.assertEqual(result, "")
-        self.assertTrue(len(self.errors) > 0)
+        with self.assertRaises(PermissionDeniedException):
+            process_text(
+                tpl,
+                self.context,
+                request_user=denier,
+                check_permissions=True,
+                mode="normal",
+            )
 
     def test_table_mode_with_single_value(self):
         self.context["value"] = 100
@@ -215,7 +198,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",
@@ -228,7 +210,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",
@@ -241,7 +222,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -255,7 +235,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -269,7 +248,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -284,7 +262,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -297,7 +274,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="normal",
@@ -339,7 +315,6 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",
@@ -353,7 +328,6 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",
@@ -367,7 +341,6 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",
@@ -394,7 +367,6 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",
@@ -407,7 +379,6 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            errors=self.errors,
             request_user=self.request_user,
             check_permissions=False,
             mode="table",

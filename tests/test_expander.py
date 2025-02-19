@@ -196,9 +196,7 @@ class TestExpander(unittest.TestCase):
         cell_wrapper = DummyCellWrapper(placeholder)
 
         # Define a dummy process_text that returns a list for test.
-        def dummy_process_text(
-            text, context, errors, request_user, check_permissions, mode
-        ):
+        def dummy_process_text(text, context, request_user, check_permissions, mode):
             if mode == "table":
                 return ["Row1", "Row2"]
             return "Row1"
@@ -229,21 +227,19 @@ class TestExpander(unittest.TestCase):
         # For testing, override merge_runs_in_paragraph to simply update paragraph text.
         from template_reports.pptx_renderer import expander
 
-        original_merger = expander.merge_runs_in_paragraph
+        original_merger = expander.process_paragraph
         try:
 
-            def dummy_merge(
-                paragraph, context, errors, request_user, check_permissions, mode
-            ):
+            def dummy_merge(paragraph, context, request_user, check_permissions, mode):
                 paragraph.text = paragraph.text.replace("{{ test }}", "VALUE")
 
-            expander.merge_runs_in_paragraph = dummy_merge
+            expander.process_paragraph = dummy_merge
             context = {"test": "VALUE"}
             process_table_cell(cell_wrapper, context, [], DummyRequestUser(), False)
             # Check that the cell's text frame paragraphs have been updated.
             self.assertIn("VALUE", cell_wrapper.text_frame.paragraphs[0].runs[0].text)
         finally:
-            expander.merge_runs_in_paragraph = original_merger
+            expander.process_paragraph = original_merger
 
 
 if __name__ == "__main__":

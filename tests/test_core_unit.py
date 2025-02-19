@@ -1,6 +1,5 @@
 import unittest
 import datetime
-import re
 from unittest.mock import patch, Mock
 
 from template_reports.templating.core import process_text
@@ -107,7 +106,6 @@ class TestCore(unittest.TestCase):
         result = process_text(
             tpl,
             {},
-            errors=[],
             request_user=DummyRequestUser(),
             check_permissions=False,
             mode="normal",
@@ -150,7 +148,6 @@ class TestCore(unittest.TestCase):
         result = process_text(
             tpl,
             context,
-            errors=[],
             request_user=DummyRequestUser(),
             check_permissions=False,
             mode="normal",
@@ -169,7 +166,6 @@ class TestCore(unittest.TestCase):
         result = process_text(
             tpl,
             context,
-            errors=[],
             request_user=DummyRequestUser(),
             check_permissions=False,
             mode="normal",
@@ -205,6 +201,24 @@ class TestCore(unittest.TestCase):
         self.assertTrue(
             any("format error" in err or "Formatting error" in err for err in errors)
         )
+
+    def test_permission_denied_exception_for_now(self):
+        tpl = "{{ now }}"
+
+        # Setup a dummy request user that always denies.
+        class DenyUser:
+            def has_perm(self, perm, obj):
+                return False
+
+        context = {"now": datetime.datetime(2025, 2, 18, 12, 0, 0)}
+        with self.assertRaises(PermissionDeniedException):
+            process_text(
+                tpl,
+                context,
+                request_user=DenyUser(),
+                check_permissions=True,
+                mode="normal",
+            )
 
 
 if __name__ == "__main__":

@@ -1,58 +1,50 @@
 import re
 import datetime
 
+from .exceptions import BadTagException
 from .formatting import convert_format
 from .resolver import get_nested_attr, evaluate_condition
 
 
-def parse_formatted_tag(expr, context, errors=None):
+def parse_formatted_tag(expr: str, context):
     """
     New helper that checks for the pipe operator '|' in the expression.
     If found, splits the expression into the value expression and format string.
     For date/datetime values, applies formatting using convert_format().
     Otherwise, returns the string representation of the resolved value.
     If no pipe operator is found, delegates to resolve_tag_expression().
-
-    Additional validation:
-      - If the value expression or format string contains unexpected curly braces,
-        an error is recorded (if errors is provided) and an empty string is returned.
     """
-    if "|" in expr:
-        parts = expr.split("|", 1)
-        value_expr = parts[0].strip()
-        fmt_str = parts[1].strip()
 
-        # Validate that neither the value expression nor format string contains '{' or '}'.
-        if "{" in value_expr or "}" in value_expr or "{" in fmt_str or "}" in fmt_str:
-            if errors is not None:
-                errors.append(
-                    f"Bad format in tag '{expr}': unexpected curly brace detected."
-                )
-            return ""
+    # Validate that expression does not contain '{' or '}'.
+    if "{" in expr or "}" in expr:
+        raise BadTagException(
+            f"Bad format in tag '{expr}': unexpected curly brace detected."
+        )
+
+    # Split the expression by the pipe operator ("|").
+    parts = expr.split("|", 1)
+    value_expr = parts[0].strip()
+
+    # Pipe operator found
+    if len(parts) == 2:
+        fmt_str = parts[1].strip()
 
         # Remove surrounding quotes, if present.
         if (fmt_str.startswith('"') and fmt_str.endswith('"')) or (
             fmt_str.startswith("'") and fmt_str.endswith("'")
         ):
             fmt_str = fmt_str[1:-1]
-        value = resolve_tag_expression(value_expr, context)
 
-        if hasattr(value, "strftime"):
-            try:
-                return value.strftime(convert_format(fmt_str))
-            except Exception as e:
-                if errors is not None:
-                    errors.append(f"Formatting error for '{expr}': {e}")
-                return ""
-        else:
-            return str(value)
+    # Resolve the tag value itself, excluding any pipe operator.
+    value = resolve_tag_expression(value_expr, context)
+
+    if hasattr(value, "strftime"):
+        try:
+            return value.strftime(convert_format(fmt_str))
+        except Exception as e:
+            raise BadTagException(f"Bad format in tag '{expr}': {e}.")
     else:
-        # Also check for stray curly braces in a non-formatted tag.
-        if "{" in expr or "}" in expr:
-            if errors is not None:
-                errors.append(f"Bad tag '{expr}': unexpected curly brace.")
-            return ""
-        return resolve_tag_expression(expr, context)
+        return value
 
 
 def resolve_tag_expression(expr, context):

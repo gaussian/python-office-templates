@@ -39,7 +39,11 @@ def _check_permissions(item, request_user, raw_expr, raise_exception, errors):
 
 
 def enforce_permissions(
-    value, raw_expr, errors, request_user, check_permissions, raise_exception=False
+    value,
+    raw_expr,
+    request_user,
+    check_permissions,
+    raise_exception=True,
 ):
     """
     Enforce permission checks on the resolved value by delegating per-item permission logic to _check_permissions.
