@@ -192,7 +192,7 @@ class TestTables(unittest.TestCase):
         cell_wrapper = DummyCellWrapper(placeholder)
 
         # Define a dummy process_text that returns a list for test.
-        def dummy_process_text(text, context, request_user, check_permissions, mode):
+        def dummy_process_text(text, context, perm_user, mode):
             if mode == "table":
                 return ["Row1", "Row2"]
             return "Row1"
@@ -200,8 +200,6 @@ class TestTables(unittest.TestCase):
         # Patch process_text locally.
         original_process_text = process_text
         try:
-            import types
-
             # Override the row-expander's process_text function
             from template_reports.pptx_renderer import tables
 
@@ -212,9 +210,7 @@ class TestTables(unittest.TestCase):
             process_table_cell(
                 cell_wrapper,
                 context,
-                [],
-                DummyRequestUser(),
-                True,
+                None,
             )
             # Since dummy_process_text returned a list, the cell's text should have been updated with first item.
             self.assertEqual(cell_wrapper.text, "Row1")
@@ -232,17 +228,15 @@ class TestTables(unittest.TestCase):
         original_para_processor = tables.process_paragraph
         try:
 
-            def dummy_merge(paragraph, context, request_user, check_permissions, mode):
+            def dummy_para_process(paragraph, context, perm_user, mode):
                 paragraph.text = paragraph.text.replace("{{ test }}", "VALUE")
 
-            tables.process_paragraph = dummy_merge
+            tables.process_paragraph = dummy_para_process
             context = {"test": "VALUE"}
             process_table_cell(
                 cell_wrapper,
                 context,
-                [],
-                DummyRequestUser(),
-                False,
+                perm_user=None,
             )
             # Check that the cell's text frame paragraphs have been updated.
             self.assertIn("VALUE", cell_wrapper.text_frame.paragraphs[0].runs[0].text)
