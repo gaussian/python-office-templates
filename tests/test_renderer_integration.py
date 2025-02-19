@@ -87,8 +87,7 @@ class TestRendererIntegration(unittest.TestCase):
             self.temp_input,
             self.context,
             self.temp_output,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
         )
         # Open the rendered PPTX.
         prs_out = Presentation(rendered)

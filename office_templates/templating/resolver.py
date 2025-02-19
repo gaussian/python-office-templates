@@ -1,6 +1,6 @@
 import re
 
-from .exceptions import BadTagException
+from .exceptions import TagCallableException
 
 
 def get_nested_attr(obj, attr):
@@ -19,14 +19,14 @@ def get_nested_attr(obj, attr):
         if obj is None:
             return None
         if isinstance(obj, dict):
-            obj = obj.get(part)
+            obj = obj[part]
         else:
-            obj = getattr(obj, part, None)
+            obj = getattr(obj, part)
         if callable(obj):
             try:
                 obj = obj()
             except Exception:
-                raise BadTagException(f"{attr} failed when calling")
+                raise TagCallableException(f"{attr} failed when calling")
     return obj
 
 

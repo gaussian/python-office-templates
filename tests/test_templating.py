@@ -2,10 +2,11 @@ import unittest
 import datetime
 import re
 from unittest.mock import patch
-from template_reports.pptx_renderer.exceptions import PermissionDeniedException
+from template_reports.templating.exceptions import PermissionDeniedException
 
 # Import main function from our templating module.
 from template_reports.templating.core import process_text
+from template_reports.templating.exceptions import MissingDataException
 
 
 # ----- Dummy Classes for Testing -----
@@ -21,6 +22,11 @@ class DummyUser:
 
     def __str__(self):
         return self.name
+
+
+class DummyDjangoUser(DummyUser):
+    # This tricks our system into thinking this is a django model
+    _meta = True
 
 
 class DummyCohort:
@@ -51,10 +57,10 @@ class TestTemplatingNormalMode(unittest.TestCase):
         self.cohort = DummyCohort("Cohort A")
         self.user1 = DummyUser("Alice", "alice@example.com", is_active=True)
         self.user2 = DummyUser("Bob", "bob@example.com", is_active=True)
-        self.user3 = DummyUser("DenyUser", "deny@example.com", is_active=True)
+        self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True)
         # program.users as a list (simulate queryset already converted to a list)
         self.program = {
-            "users": [self.user1, self.user2, self.user3],
+            "users": [self.user1, self.user2, self.django_user],
             "name": "Test Program",
         }
         self.now = datetime.datetime(2025, 2, 18, 12, 0, 0)
@@ -75,8 +81,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         expected = self.now.strftime("%B %d, %Y")
@@ -91,8 +96,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         expected = ", ".join(u.email for u in self.program["users"])
@@ -104,8 +108,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         # Expected: "All emails: alice@example.com, bob@example.com, deny@example.com are active."
@@ -122,8 +125,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
             process_text(
                 tpl,
                 self.context,
-                request_user=self.request_user,
-                check_permissions=True,
+                perm_user=self.request_user,
                 mode="normal",
             )
 
@@ -132,22 +134,20 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         self.assertEqual(result, "Empty tag: .")
 
     def test_missing_key_in_context(self):
         tpl = "Missing: {{ non_existent }}."
-        result = process_text(
-            tpl,
-            self.context,
-            request_user=self.request_user,
-            check_permissions=False,
-            mode="normal",
-        )
-        self.assertEqual(result, "Missing: .")
+        with self.assertRaises(MissingDataException):
+            process_text(
+                tpl,
+                self.context,
+                perm_user=None,
+                mode="normal",
+            )
 
     def test_nested_lookup_with_function(self):
         # Dynamically add a callable attribute to user1.
@@ -157,8 +157,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         self.assertEqual(result, "Display: ALICE")
@@ -168,8 +167,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         # The filtered list will join a single email into a string.
@@ -187,8 +185,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
             process_text(
                 tpl,
                 self.context,
-                request_user=denier,
-                check_permissions=True,
+                perm_user=denier,
                 mode="normal",
             )
 
@@ -198,8 +195,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         self.assertEqual(result, "100")
@@ -210,8 +206,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         self.assertEqual(result, ["100"])
@@ -222,8 +217,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         self.assertEqual(
@@ -235,8 +229,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         self.assertEqual(result, tpl)
@@ -248,8 +241,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         expected_date = self.now.strftime("%B %d, %Y")
@@ -262,8 +254,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         self.assertEqual(result, "The count is 42")
@@ -274,8 +265,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="normal",
         )
         self.assertEqual(result, "Price: 19.95")
@@ -288,10 +278,10 @@ class TestTemplatingTableMode(unittest.TestCase):
         self.cohort = DummyCohort("Cohort A")
         self.user1 = DummyUser("Alice", "alice@example.com", is_active=True)
         self.user2 = DummyUser("Bob", "bob@example.com", is_active=True)
-        self.user3 = DummyUser("DenyUser", "deny@example.com", is_active=True)
+        self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True)
         # program.users as a list (simulate queryset already converted to a list)
         self.program = {
-            "users": [self.user1, self.user2, self.user3],
+            "users": [self.user1, self.user2, self.django_user],
             "name": "Test Program",
         }
         self.now = datetime.datetime(2025, 2, 18, 12, 0, 0)
@@ -302,8 +292,6 @@ class TestTemplatingTableMode(unittest.TestCase):
         }
         # Use a dummy request user that denies permission on any object whose name contains "deny".
         self.request_user = DummyRequestUser()
-        # We'll collect errors here.
-        self.errors = []
 
     # Table mode tests.
     @patch("template_reports.templating.parser.datetime.datetime")
@@ -315,8 +303,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         expected = self.now.strftime("%B %d, %Y")
@@ -328,8 +315,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         expected = [str(u.email) for u in self.program["users"]]
@@ -341,8 +327,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         # Expect a list with one entry per user.
@@ -355,9 +340,7 @@ class TestTemplatingTableMode(unittest.TestCase):
             process_text(
                 tpl,
                 self.context,
-                errors=self.errors,
-                request_user=self.request_user,
-                check_permissions=False,
+                perm_user=None,
                 mode="table",
             )
 
@@ -367,8 +350,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         self.assertEqual(result, "100")
@@ -379,8 +361,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
             mode="table",
         )
         self.assertEqual(result, ["100"])
@@ -388,21 +369,20 @@ class TestTemplatingTableMode(unittest.TestCase):
     def test_all_permissions_denied(self):
         # Create a request user that denies permission for all objects.
         class DenyAllUser:
+            _meta: True
+
             def has_perm(self, perm, obj):
                 return False
 
         denier = DenyAllUser()
         tpl = "{{ program.users.email }}"
-        result = process_text(
-            tpl,
-            self.context,
-            errors=self.errors,
-            request_user=denier,
-            check_permissions=True,
-            mode="table",
-        )
-        self.assertEqual(result, "")
-        self.assertTrue(len(self.errors) > 0)
+        with self.assertRaises(PermissionDeniedException):
+            process_text(
+                tpl,
+                self.context,
+                perm_user=denier,
+                mode="table",
+            )
 
 
 if __name__ == "__main__":

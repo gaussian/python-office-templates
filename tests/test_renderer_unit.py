@@ -1,15 +1,12 @@
 import os
 import tempfile
 import unittest
+import datetime
+
 from pptx import Presentation
 from pptx.util import Inches
+
 from template_reports.pptx_renderer.renderer import render_pptx
-from template_reports.pptx_renderer.exceptions import (
-    UnterminatedTagException,
-    PermissionDeniedException,
-    UnresolvedTagError,
-)
-import datetime
 
 
 # Dummy objects for testing renderer behavior.
@@ -71,8 +68,7 @@ class TestRendererUnit(unittest.TestCase):
             self.temp_input,
             self.context,
             self.temp_output,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
         )
         # Load output and check text from slide[0], shape[0].
         prs_out = Presentation(rendered)
@@ -95,8 +91,7 @@ class TestRendererUnit(unittest.TestCase):
             temp_in,
             context,
             temp_out,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
         )
         prs_out = Presentation(rendered)
         shape = prs_out.slides[0].shapes[0]
@@ -119,8 +114,7 @@ class TestRendererUnit(unittest.TestCase):
             self.temp_input,
             self.context,
             self.temp_output,
-            request_user=self.request_user,
-            check_permissions=False,
+            perm_user=None,
         )
         prs_out = Presentation(rendered)
         shape = prs_out.slides[0].shapes[0]
@@ -137,8 +131,7 @@ class TestRendererUnit(unittest.TestCase):
                 self.temp_input,
                 self.context,
                 self.temp_output,
-                request_user=self.request_user,
-                check_permissions=True,
+                perm_user=self.request_user,
             )
         self.assertIn("Permission denied", str(cm.exception))
 

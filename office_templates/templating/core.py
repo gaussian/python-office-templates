@@ -6,33 +6,17 @@ using the provided context. Both "normal" and "table" modes are supported. In
 "normal" mode, all tags are replaced inline (with list results joined by a delimiter).
 In "table" mode, if the text contains exactly one tag, its resolved value is used
 to produce the final output (if a list then a list of outputs is returned).
-Permission checking is enforced via enforce_permissions().
+Permission checking is enforced during parsing.
 """
 
 import re
 from .parser import parse_formatted_tag
-from .permissions import enforce_permissions
-
-
-def _process_match(raw_expr, context, request_user, check_permissions):
-    """
-    Helper to resolve a single tag expression with formatting and enforce permissions.
-    Returns the final resolved value.
-    """
-    value = parse_formatted_tag(raw_expr, context)
-    return enforce_permissions(
-        value,
-        raw_expr,
-        request_user,
-        check_permissions,
-    )
 
 
 def process_text(
     text,
     context,
-    request_user=None,
-    check_permissions=True,
+    perm_user=None,
     mode="normal",
     delimiter=", ",
 ):
@@ -72,11 +56,10 @@ def process_text(
         raw_expr = m.group(1).strip()
 
         # Process the actual tag expression.
-        value = _process_match(
+        value = parse_formatted_tag(
             raw_expr,
             context,
-            request_user,
-            check_permissions,
+            perm_user=perm_user,
         )
 
         if isinstance(value, list):

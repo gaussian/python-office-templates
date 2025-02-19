@@ -1,14 +1,16 @@
 import re
 import datetime
 
+
 from .exceptions import BadTagException, MissingDataException
 from .formatting import convert_format
+from .permissions import enforce_permissions
 from .resolver import get_nested_attr, evaluate_condition
 
-ALLOWED_SEGMENT_PATTERN = re.compile(r"^[A-Za-z0-9,\s\[\]\'\"_\-=]*$")
+BAD_SEGMENT_PATTERN = re.compile(r"^[#%]*$")
 
 
-def parse_formatted_tag(expr: str, context):
+def parse_formatted_tag(expr: str, context, perm_user=None):
     """
     New helper that checks for the pipe operator '|' in the expression.
     If found, splits the expression into the value expression and format string.
@@ -39,7 +41,11 @@ def parse_formatted_tag(expr: str, context):
             fmt_str = fmt_str[1:-1]
 
     # Resolve the tag value itself, excluding any pipe operator.
-    value = resolve_tag_expression(value_expr, context)
+    value = resolve_tag_expression(
+        value_expr,
+        context,
+        perm_user=perm_user,
+    )
 
     if fmt_str and hasattr(value, "strftime"):
         try:
@@ -50,7 +56,7 @@ def parse_formatted_tag(expr: str, context):
         return value
 
 
-def resolve_tag_expression(expr, context):
+def resolve_tag_expression(expr, context, perm_user=None):
     """
     Resolve a dotted expression (e.g. "user.name", "program.users[is_active=True].email").
 
@@ -64,7 +70,7 @@ def resolve_tag_expression(expr, context):
         return ""
 
     # Validate all segments are valid
-    if not all(bool(ALLOWED_SEGMENT_PATTERN.fullmatch(s)) for s in segments):
+    if any(bool(BAD_SEGMENT_PATTERN.fullmatch(s)) for s in segments):
         raise BadTagException(f"Bad characters in tag segments: {segments}")
 
     # Special case: "now" returns a datetime
@@ -74,7 +80,11 @@ def resolve_tag_expression(expr, context):
     # Iterate over the segments
     current = context
     for seg in segments:
-        current = resolve_segment(current, seg)
+        current = resolve_segment(
+            current,
+            seg,
+            perm_user=perm_user,
+        )
         if current is None:
             return ""
 
@@ -89,7 +99,7 @@ def split_expression(expr):
     return re.split(r"\.(?![^\[]*\])", expr)
 
 
-def resolve_segment(current, segment):
+def resolve_segment(current, segment, perm_user=None):
     """
     Resolve one segment of a dotted expression. A segment may include an optional filter in brackets,
     e.g. "users[is_active=True]".
@@ -104,7 +114,7 @@ def resolve_segment(current, segment):
     """
     m = re.match(r"(\w+(?:__\w+)*)(\[(.*?)\])?$", segment)
     if not m:
-        raise MissingDataException(f"{segment} not in {current}")
+        raise BadTagException(f"{segment} in tag is malformed")
 
     attr_name = m.group(1)
     filter_expr = m.group(3)
@@ -113,7 +123,11 @@ def resolve_segment(current, segment):
     if isinstance(current, list):
         results = []
         for item in current:
-            res = resolve_segment(item, segment)
+            res = resolve_segment(
+                item,
+                segment,
+                perm_user=perm_user,
+            )
             if isinstance(res, list):
                 results.extend(res)
             else:
@@ -122,9 +136,12 @@ def resolve_segment(current, segment):
         return results
 
     # 2) Get the attribute from the current object
-    value = get_nested_attr(current, attr_name)
+    try:
+        value = get_nested_attr(current, attr_name)
+    except (AttributeError, KeyError) as e:
+        raise MissingDataException(f"{segment} not found in {current}")
 
-    # 3) If it's a "Django-like" QuerySet that has .filter(...)
+    # 4) If it's a "Django-like" QuerySet that has .filter(...)
     if value is not None and hasattr(value, "filter") and callable(value.filter):
         # If we have a filter expression in brackets, parse it
         if filter_expr:
@@ -150,15 +167,21 @@ def resolve_segment(current, segment):
         # Convert the QuerySet to a list for further resolution if there's another segment
         return list(value)
 
+    # 5) Otherwise it's a regular object or Django model
     else:
-        # 4) If there's a filter expression on a non-queryset, treat 'value' as a list and filter it
+        value_list = value if isinstance(value, list) else [value]
+
+        # If there's a filter expression on a non-queryset, treat 'value' as a list and filter it
         if filter_expr:
-            if not isinstance(value, list):
-                value = [value]
             conditions = [cond.strip() for cond in filter_expr.split(",")]
             value = [
                 item
-                for item in value
+                for item in value_list
                 if all(evaluate_condition(item, cond) for cond in conditions)
             ]
+
+        # Check permissions
+        for value_item in value_list:
+            enforce_permissions(value_item, perm_user)
+
         return value

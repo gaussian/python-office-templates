@@ -4,7 +4,7 @@ from template_reports.templating.permissions import (
     has_view_permission,
     enforce_permissions,
 )
-from template_reports.pptx_renderer.exceptions import PermissionDeniedException
+from template_reports.templating.exceptions import PermissionDeniedException
 
 
 # Dummy request user for permission testing.
@@ -60,69 +60,35 @@ class TestPermissions(unittest.TestCase):
     def test_enforce_permissions_single_value(self):
         # For a non-Django object, value is returned unchanged.
         val = "test value"
-        res = enforce_permissions(val, "expr", self.request_user, True)
+        res = enforce_permissions(val, self.request_user, True)
         self.assertEqual(res, val)
 
         # For allowed Django-like object.
-        res_allowed = enforce_permissions(
-            self.django_allowed, "expr", self.request_user, True
-        )
+        res_allowed = enforce_permissions(self.django_allowed, self.request_user, True)
         self.assertEqual(res_allowed, self.django_allowed)
 
-        # For denied Django-like object, should return empty string.
-        res_denied = enforce_permissions(
-            self.django_denied, "expr", self.request_user, True
-        )
-        self.assertEqual(res_denied, "")
+        # For denied Django-like object, expect an exception instead of empty string.
+        with self.assertRaises(PermissionDeniedException):
+            enforce_permissions(self.django_denied, self.request_user, True)
 
     def test_enforce_permissions_list(self):
-        # Test on a list containing allowed and denied objects.
+        # Test on a list containing an allowed object and a denied object.
         values = [self.django_allowed, self.django_denied, self.non_django]
-        res = enforce_permissions(values, "expr", self.request_user, True)
-        # Expect denied Django object filtered out.
-        self.assertEqual(res, [self.django_allowed, self.non_django])
-
-    def test_enforce_permissions_no_check(self):
-        # With check_permissions False, the value is returned unchanged.
-        values = [self.django_denied]
-        res = enforce_permissions(values, "expr", self.request_user, False)
-        self.assertEqual(res, values)
-
-    def test_enforce_permissions_single_value_no_exception(self):
-        # When permission is denied and raise_exception is False.
-        res = enforce_permissions(
-            self.django_denied,
-            "expr",
-            self.request_user,
-            True,
-            raise_exception=False,
-        )
-        self.assertEqual(res, "")
+        with self.assertRaises(PermissionDeniedException):
+            enforce_permissions(values, self.request_user, True)
 
     def test_enforce_permissions_single_value_exception(self):
         # When permission is denied and raise_exception is True.
         with self.assertRaises(PermissionDeniedException):
             enforce_permissions(
                 self.django_denied,
-                "expr",
                 self.request_user,
-                True,
-                raise_exception=True,
             )
-
-    def test_enforce_permissions_list_no_exception(self):
-        values = [self.django_allowed, self.django_denied, self.non_django]
-        res = enforce_permissions(
-            values, "expr", self.request_user, True, raise_exception=False
-        )
-        self.assertEqual(res, [self.django_allowed, self.non_django])
 
     def test_enforce_permissions_list_exception(self):
         values = [self.django_allowed, self.django_denied, self.non_django]
         with self.assertRaises(PermissionDeniedException):
-            enforce_permissions(
-                values, "expr", self.request_user, True, raise_exception=True
-            )
+            enforce_permissions(values, self.request_user)
 
 
 if __name__ == "__main__":

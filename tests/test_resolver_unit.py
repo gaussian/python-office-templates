@@ -28,8 +28,9 @@ class TestResolver(unittest.TestCase):
         # Test nested dictionary attribute.
         data = {"a": {"b": {"c": 100}}}
         self.assertEqual(get_nested_attr(data, "a__b__c"), 100)
-        # Return None if not found.
-        self.assertIsNone(get_nested_attr(data, "a__x"))
+        # Exception if not found.
+        with self.assertRaises(KeyError):
+            get_nested_attr(data, "a__x")
 
     def test_evaluate_condition_true(self):
         # Use a dict.

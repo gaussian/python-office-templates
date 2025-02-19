@@ -11,6 +11,7 @@ from template_reports.templating.resolver import get_nested_attr
 from template_reports.templating.exceptions import (
     BadTagException,
     MissingDataException,
+    TagCallableException,
 )  # Added import
 
 
@@ -182,20 +183,23 @@ class TestParser(unittest.TestCase):
 
     def test_resolve_segment_invalid_segment(self):
         # Segment that does not match the expected pattern should return None.
-        self.assertIsNone(resolve_segment("abc#", "xyz"))
+        with self.assertRaises(MissingDataException):
+            resolve_segment("abc#", "xyz")
 
     def test_get_nested_attr_with_callable(self):
         # Test that if an attribute is callable, it gets called.
         obj = Dummy(name=lambda: "test", value=123)
         self.assertEqual(get_nested_attr(obj, "name"), "test")
-        # If calling raises exception, returns None.
+        # If calling raises exception, should convert exception
         obj_bad = Dummy(name=lambda: 1 / 0, value=123)
-        self.assertIsNone(get_nested_attr(obj_bad, "name"))
+        with self.assertRaises(TagCallableException):
+            get_nested_attr(obj_bad, "name")
 
     def test_parse_expression_with_nonexistent_nested_attr(self):
         # For nested keys that don't exist, should return empty string.
         context = {"user": {"name": "Alice"}}
-        self.assertEqual(parse_formatted_tag("user.age", context), "")
+        with self.assertRaises(MissingDataException):
+            parse_formatted_tag("user.age", context)
 
     def test_expression_with_opening_brace(self):
         # Expression containing an extra opening brace should fail.
