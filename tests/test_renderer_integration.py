@@ -111,7 +111,7 @@ class TestRendererIntegration(unittest.TestCase):
         first_cell_text = table_shape.table.cell(0, 0).text.strip()
         self.assertEqual(first_cell_text, emails[0])
         # There should be additional rows for each remaining email.
-        # Since our expander is a hack, we'll simply check that at least one additional row exists.
+        # Since our row-expander is a hack, we'll simply check that at least one additional row exists.
         self.assertTrue(len(list(table_shape.table.rows)) > 1)
 
 

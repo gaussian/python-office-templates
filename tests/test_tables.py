@@ -1,11 +1,7 @@
 import unittest
-from copy import deepcopy
 from unittest.mock import patch
 
-import datetime
-import re
-
-from template_reports.pptx_renderer.expander import (
+from template_reports.pptx_renderer.tables import (
     process_table_cell,
     clone_row_with_value,
     expand_table_cell_with_list,
@@ -125,7 +121,7 @@ class DummyCellWrapper:
         return f"DummyCellWrapper(text={self.text})"
 
 
-class TestExpander(unittest.TestCase):
+class TestTables(unittest.TestCase):
 
     # --- Tests for clone_row_with_value ---
     @patch("pptx.table._Cell", new=DummyCell)
@@ -206,40 +202,52 @@ class TestExpander(unittest.TestCase):
         try:
             import types
 
-            # Override the expander's process_text function
-            from template_reports.pptx_renderer import expander
+            # Override the row-expander's process_text function
+            from template_reports.pptx_renderer import tables
 
-            expander.process_text = dummy_process_text
+            tables.process_text = dummy_process_text
             # Create dummy context.
             context = {"test": "ignored"}
             # Call process_table_cell.
-            process_table_cell(cell_wrapper, context, [], DummyRequestUser(), True)
+            process_table_cell(
+                cell_wrapper,
+                context,
+                [],
+                DummyRequestUser(),
+                True,
+            )
             # Since dummy_process_text returned a list, the cell's text should have been updated with first item.
             self.assertEqual(cell_wrapper.text, "Row1")
         finally:
-            expander.process_text = original_process_text
+            tables.process_text = original_process_text
 
     def test_process_table_cell_mixed_text(self):
         # For a cell that is not a pure placeholder, process_table_cell should call merge_runs_in_paragraph.
         # In this simple test, we simulate that no cloning happens.
         non_pure = "Prefix {{ test }} Suffix"
         cell_wrapper = DummyCellWrapper(non_pure)
-        # For testing, override merge_runs_in_paragraph to simply update paragraph text.
-        from template_reports.pptx_renderer import expander
+        # For testing, override process_paragraph to simply update paragraph text.
+        from template_reports.pptx_renderer import tables
 
-        original_merger = expander.process_paragraph
+        original_para_processor = tables.process_paragraph
         try:
 
             def dummy_merge(paragraph, context, request_user, check_permissions, mode):
                 paragraph.text = paragraph.text.replace("{{ test }}", "VALUE")
 
-            expander.process_paragraph = dummy_merge
+            tables.process_paragraph = dummy_merge
             context = {"test": "VALUE"}
-            process_table_cell(cell_wrapper, context, [], DummyRequestUser(), False)
+            process_table_cell(
+                cell_wrapper,
+                context,
+                [],
+                DummyRequestUser(),
+                False,
+            )
             # Check that the cell's text frame paragraphs have been updated.
             self.assertIn("VALUE", cell_wrapper.text_frame.paragraphs[0].runs[0].text)
         finally:
-            expander.process_paragraph = original_merger
+            tables.process_paragraph = original_para_processor
 
 
 if __name__ == "__main__":
