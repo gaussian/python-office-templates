@@ -1,5 +1,7 @@
 import re
 
+from .exceptions import BadTagException
+
 
 def get_nested_attr(obj, attr):
     """
@@ -24,7 +26,7 @@ def get_nested_attr(obj, attr):
             try:
                 obj = obj()
             except Exception:
-                obj = None
+                raise BadTagException(f"{attr} failed when calling")
     return obj
 
 

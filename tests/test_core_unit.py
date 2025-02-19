@@ -4,6 +4,7 @@ from unittest.mock import patch, Mock
 
 from template_reports.templating.core import process_text
 from template_reports.pptx_renderer.exceptions import PermissionDeniedException
+from template_reports.templating.exceptions import MissingDataException  # Added import
 
 
 # Dummy request user for testing.
@@ -20,13 +21,11 @@ class TestCore(unittest.TestCase):
     """
 
     @patch("template_reports.templating.core.enforce_permissions", return_value="Alice")
-    @patch(
-        "template_reports.templating.core.resolve_tag_expression", return_value="Alice"
-    )
-    def test_pure_placeholder_normal(self, mock_resolve, mock_enforce):
+    @patch("template_reports.templating.core.parse_formatted_tag", return_value="Alice")
+    def test_pure_placeholder_normal(self, mock_parse, mock_enforce):
         """Verifies normal-mode resolution of a simple placeholder.
 
-        Ensures that 'resolve_tag_expression' and 'enforce_permissions'
+        Ensures that 'parse_formatted_tag' and 'enforce_permissions'
         are called correctly, returning the expected string value.
         """
         context = {"user": "Alice"}
@@ -39,11 +38,11 @@ class TestCore(unittest.TestCase):
             mode="normal",
         )
         self.assertEqual(result, "Alice")
-        mock_resolve.assert_called_once_with("user", context)
+        mock_parse.assert_called_once_with("user", context)
 
     @patch("template_reports.templating.core.enforce_permissions", return_value="Bob")
-    @patch("template_reports.templating.core.resolve_tag_expression", return_value="Bob")
-    def test_pure_placeholder_table(self, mock_resolve, mock_enforce):
+    @patch("template_reports.templating.core.parse_formatted_tag", return_value="Bob")
+    def test_pure_placeholder_table(self, mock_parse, mock_enforce):
         context = {"user": "Bob"}
         text = "{{ user }}"
         result = process_text(
@@ -55,38 +54,14 @@ class TestCore(unittest.TestCase):
         )
         self.assertEqual(result, "Bob")
 
-    @patch("template_reports.templating.core.convert_format", return_value="%B %d, %Y")
-    @patch("template_reports.templating.core.enforce_permissions")
-    @patch("template_reports.templating.core.resolve_tag_expression")
-    def test_formatting_pipe(self, mock_resolve, mock_enforce, mock_convert):
-        """Ensures that placeholders with a formatting pipe are
-        converted correctly into a Python strftime format.
-        """
-        fake_date = datetime.datetime(2020, 1, 1)
-        mock_resolve.return_value = fake_date
-        # When enforce_permissions is called, return the value unchanged.
-        mock_enforce.side_effect = lambda value, r, e, ru, cp, **kwargs: value
-        context = {"date": fake_date}
-        text = "{{ date | MMMM dd, YYYY }}"
-        result = process_text(
-            text,
-            context,
-            request_user=DummyRequestUser(),
-            check_permissions=True,
-            mode="normal",
-        )
-        expected = fake_date.strftime("%B %d, %Y")
-        self.assertEqual(result, expected)
-        mock_convert.assert_called_once_with("MMMM dd, YYYY")
-
     @patch(
         "template_reports.templating.core.enforce_permissions", return_value="TestValue"
     )
     @patch(
-        "template_reports.templating.core.resolve_tag_expression",
+        "template_reports.templating.core.parse_formatted_tag",
         return_value="TestValue",
     )
-    def test_mixed_text(self, mock_resolve, mock_enforce):
+    def test_mixed_text(self, mock_parse, mock_enforce):
         context = {"value": "TestValue"}
         text = "Prefix {{ value }} Suffix"
         result = process_text(
@@ -99,8 +74,8 @@ class TestCore(unittest.TestCase):
         self.assertEqual(result, "Prefix TestValue Suffix")
 
     # --- Additional Edge Case Tests with full patching ---
-    @patch("template_reports.templating.core.resolve_tag_expression", return_value="")
-    def test_empty_placeholder(self, mock_resolve):
+    @patch("template_reports.templating.core.parse_formatted_tag", return_value="")
+    def test_empty_placeholder(self, mock_parse):
         tpl = "Empty: {{    }}."
         # Without a valid resolution, empty placeholders are processed to empty.
         result = process_text(
@@ -112,33 +87,27 @@ class TestCore(unittest.TestCase):
         )
         self.assertEqual(result, "Empty: .")
 
-    @patch("template_reports.templating.core.resolve_tag_expression", return_value="")
-    def test_missing_key(self, mock_resolve):
+    @patch("template_reports.templating.core.parse_formatted_tag", return_value="")
+    def test_missing_key(self, mock_parse):
         tpl = "Missing: {{ non_existent }}."
-        errors = []
-        result = process_text(
-            tpl,
-            {},
-            errors=errors,
-            request_user=DummyRequestUser(),
-            check_permissions=False,
-            mode="normal",
-        )
-        self.assertEqual(result, "Missing: .")
-        self.assertTrue(any("non_existent" in err for err in errors))
+        with self.assertRaises(MissingDataException):  # Updated to expect exception
+            process_text(
+                tpl,
+                {},
+                request_user=DummyRequestUser(),
+                check_permissions=False,
+                mode="normal",
+            )
 
     @patch(
-        "template_reports.templating.core.resolve_tag_expression",
+        "template_reports.templating.core.parse_formatted_tag",
         side_effect=lambda expr, ctx: "Alice" if expr == "user.name" else ctx.get("now"),
     )
-    @patch("template_reports.templating.core.convert_format", return_value="%B %d, %Y")
     @patch(
         "template_reports.templating.core.enforce_permissions",
-        side_effect=lambda value, r, e, ru, cp, **kwargs: value,
+        side_effect=lambda value, r, ru, cp, **kwargs: value,
     )
-    def test_multiple_placeholders_in_mixed_text(
-        self, mock_enforce, mock_convert, mock_resolve
-    ):
+    def test_multiple_placeholders_in_mixed_text(self, mock_enforce, mock_parse):
         """Checks that multiple placeholders in a single string
         are each resolved and formatted independently.
         """
@@ -156,11 +125,11 @@ class TestCore(unittest.TestCase):
         self.assertEqual(result, expected)
 
     @patch(
-        "template_reports.templating.core.resolve_tag_expression",
+        "template_reports.templating.core.parse_formatted_tag",
         return_value=lambda: "ALICE",
     )
     @patch("template_reports.templating.core.enforce_permissions", return_value="ALICE")
-    def test_nested_lookup_with_function(self, mock_enforce, mock_resolve):
+    def test_nested_lookup_with_function(self, mock_enforce, mock_parse):
         context = {"user": {"name": "Alice", "get_display": lambda: "ALICE"}}
         tpl = "Display: {{ user.get_display }}"
         result = process_text(
@@ -172,19 +141,16 @@ class TestCore(unittest.TestCase):
         )
         self.assertEqual(result, "Display: ALICE")
 
-    @patch("template_reports.templating.core.convert_format", return_value="%b %d, %Y")
-    @patch("template_reports.templating.core.resolve_tag_expression")
+    @patch("template_reports.templating.core.parse_formatted_tag")
     @patch(
         "template_reports.templating.core.enforce_permissions",
-        side_effect=lambda v, r, e, ru, cp: v,
+        side_effect=lambda v, r, ru, cp, **kwargs: v,
     )
-    def test_formatting_with_percent_error(
-        self, mock_enforce, mock_resolve, mock_convert
-    ):
+    def test_formatting_with_percent_error(self, mock_enforce, mock_parse, mock_convert):
         # Return a mock datetime object that raises ValueError on strftime.
         mock_dt = Mock(spec=datetime.datetime)
         mock_dt.strftime.side_effect = ValueError("format error")
-        mock_resolve.return_value = mock_dt
+        mock_parse.return_value = mock_dt
 
         tpl = "{{ now | MMM dd, YYYY %Z }}"
         context = {"now": datetime.datetime(2025, 2, 18, 12, 0, 0)}

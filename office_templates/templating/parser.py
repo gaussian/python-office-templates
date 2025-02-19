@@ -1,9 +1,11 @@
 import re
 import datetime
 
-from .exceptions import BadTagException
+from .exceptions import BadTagException, MissingDataException
 from .formatting import convert_format
 from .resolver import get_nested_attr, evaluate_condition
+
+ALLOWED_SEGMENT_PATTERN = re.compile(r"^[A-Za-z0-9,\s\[\]\'\"_\-=]*$")
 
 
 def parse_formatted_tag(expr: str, context):
@@ -26,6 +28,7 @@ def parse_formatted_tag(expr: str, context):
     value_expr = parts[0].strip()
 
     # Pipe operator found
+    fmt_str = None
     if len(parts) == 2:
         fmt_str = parts[1].strip()
 
@@ -38,7 +41,7 @@ def parse_formatted_tag(expr: str, context):
     # Resolve the tag value itself, excluding any pipe operator.
     value = resolve_tag_expression(value_expr, context)
 
-    if hasattr(value, "strftime"):
+    if fmt_str and hasattr(value, "strftime"):
         try:
             return value.strftime(convert_format(fmt_str))
         except Exception as e:
@@ -56,18 +59,25 @@ def resolve_tag_expression(expr, context):
     segments = split_expression(expr)
     if not segments:
         return ""
-    # "now" returns a datetime
-    if segments[0].strip() == "now":
-        return datetime.datetime.now()
-
-    current = context.get(segments[0])
-    if current is None:
+    first_segment = segments[0]
+    if not first_segment:
         return ""
 
-    for seg in segments[1:]:
+    # Validate all segments are valid
+    if not all(bool(ALLOWED_SEGMENT_PATTERN.fullmatch(s)) for s in segments):
+        raise BadTagException(f"Bad characters in tag segments: {segments}")
+
+    # Special case: "now" returns a datetime
+    if first_segment.strip() == "now":
+        return datetime.datetime.now()
+
+    # Iterate over the segments
+    current = context
+    for seg in segments:
         current = resolve_segment(current, seg)
         if current is None:
             return ""
+
     return current
 
 
@@ -94,7 +104,7 @@ def resolve_segment(current, segment):
     """
     m = re.match(r"(\w+(?:__\w+)*)(\[(.*?)\])?$", segment)
     if not m:
-        return None
+        raise MissingDataException(f"{segment} not in {current}")
 
     attr_name = m.group(1)
     filter_expr = m.group(3)
@@ -108,7 +118,7 @@ def resolve_segment(current, segment):
                 results.extend(res)
             else:
                 results.append(res)
-        # Flattened results
+        # List results
         return results
 
     # 2) Get the attribute from the current object
