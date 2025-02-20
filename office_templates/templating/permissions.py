@@ -29,7 +29,7 @@ def _check_permissions(item, perm_user):
     Otherwise, returns (None, False). If raise_exception is True, raises PermissionDeniedException immediately.
     """
     if is_django_object(item) and not has_view_permission(item, perm_user):
-        msg = f"Permission denied for: {item}"
+        msg = f"Permission denied on: {item}"
         raise PermissionDeniedException(msg)
     return (item, True)
 

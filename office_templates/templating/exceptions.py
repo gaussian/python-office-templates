@@ -19,7 +19,4 @@ class TagCallableException(Exception):
 class PermissionDeniedException(Exception):
     """Raised when one or more expressions fail the permission check."""
 
-    def __init__(self, errors):
-        self.errors = errors
-        msg = "Permission denied for the following expressions: " + ", ".join(errors)
-        super().__init__(msg)
+    pass

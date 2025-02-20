@@ -46,6 +46,7 @@ class TestRendererIntegration(unittest.TestCase):
             Inches(0.5), Inches(0.5), Inches(4), Inches(1)
         )
         textbox.text_frame.text = "Welcome, {{ user.name }}. Program: {{ program.name }}."
+        self.textbox_index = len(self.slide.shapes) - 1
         # Add a table with one row, one column.
         rows, cols = 1, 1
         left, top, width, height = Inches(0.5), Inches(2), Inches(4), Inches(0.8)
@@ -70,7 +71,6 @@ class TestRendererIntegration(unittest.TestCase):
         self.context = {
             "user": self.user,
             "program": self.program,
-            "now": datetime.datetime(2025, 2, 18, 12, 0, 0),
             "date": datetime.date(2020, 1, 15),
         }
         self.request_user = DummyRequestUser()
@@ -83,7 +83,7 @@ class TestRendererIntegration(unittest.TestCase):
 
     def test_integration_renderer(self):
         # Run the renderer integration.
-        rendered = render_pptx(
+        rendered, _ = render_pptx(
             self.temp_input,
             self.context,
             self.temp_output,
@@ -92,7 +92,7 @@ class TestRendererIntegration(unittest.TestCase):
         # Open the rendered PPTX.
         prs_out = Presentation(rendered)
         # Test text box content.
-        textbox = prs_out.slides[0].shapes[0]
+        textbox = prs_out.slides[0].shapes[self.textbox_index]
         txt = textbox.text_frame.text
         self.assertIn("Welcome, Alice.", txt)
         self.assertIn("Program: Test Program", txt)
