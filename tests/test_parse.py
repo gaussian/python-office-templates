@@ -1,5 +1,5 @@
 import unittest
-from template_reports.templating.resolver import (
+from template_reports.templating.parse import (
     get_nested_attr,
     evaluate_condition,
     parse_value,

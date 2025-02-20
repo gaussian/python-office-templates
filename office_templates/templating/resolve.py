@@ -3,13 +3,13 @@ import datetime
 
 from .exceptions import BadTagException, MissingDataException, TagCallableException
 from .formatting import convert_format
+from .parse import get_nested_attr, evaluate_condition, parse_callable_args
 from .permissions import enforce_permissions
-from .resolver import get_nested_attr, evaluate_condition, parse_callable_args
 
 BAD_SEGMENT_PATTERN = re.compile(r"^[#%]*$")
 
 
-def parse_formatted_tag(expr: str, context, perm_user=None):
+def resolve_formatted_tag(expr: str, context, perm_user=None):
     """
     Resolve a template tag expression and return its final value.
 
@@ -62,7 +62,7 @@ def parse_formatted_tag(expr: str, context, perm_user=None):
             fmt_str = fmt_str[1:-1]
 
     # Resolve the tag expression (without the formatting part).
-    value = resolve_tag_expression(value_expr, context, perm_user=perm_user)
+    value = resolve_tag(value_expr, context, perm_user=perm_user)
 
     # If a format string is provided and the value supports strftime, format it.
     if fmt_str and hasattr(value, "strftime"):
@@ -99,13 +99,13 @@ def substitute_inner_tags(expr: str, context, perm_user=None) -> str:
     def replace_func(match):
         inner_expr = match.group(1).strip()
         # Resolve the inner expression using the same tag parser.
-        resolved = parse_formatted_tag(inner_expr, context, perm_user)
+        resolved = resolve_formatted_tag(inner_expr, context, perm_user)
         return str(resolved)
 
     return pattern.sub(replace_func, expr)
 
 
-def resolve_tag_expression(expr, context, perm_user=None):
+def resolve_tag(expr, context, perm_user=None):
     """
     Resolve a dotted tag expression using the provided context. The expression can consist
     of multiple segments separated by periods. Each segment may represent:

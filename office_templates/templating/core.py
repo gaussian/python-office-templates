@@ -10,7 +10,8 @@ Permission checking is enforced during parsing.
 """
 
 import re
-from .parser import parse_formatted_tag
+
+from .resolve import resolve_formatted_tag
 
 
 def get_matching_tags(text):
@@ -60,7 +61,7 @@ def process_text(
         raw_expr = m.group(1).strip()
 
         # Process the actual tag expression.
-        value = parse_formatted_tag(
+        value = resolve_formatted_tag(
             raw_expr,
             context,
             perm_user=perm_user,

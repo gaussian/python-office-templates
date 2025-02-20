@@ -2,9 +2,11 @@ import os
 import tempfile
 import unittest
 import datetime
+
 from pptx import Presentation
 from pptx.util import Inches
-from template_reports.pptx_renderer.renderer import render_pptx
+
+from template_reports.pptx_renderer import render_pptx
 
 
 # Dummy objects for integration testing.

@@ -2,12 +2,12 @@ import unittest
 import datetime
 from unittest.mock import patch
 
-from template_reports.templating.parser import (
-    parse_formatted_tag,
+from template_reports.templating.resolve import (
+    resolve_formatted_tag,
     split_expression,
     resolve_segment,
 )
-from template_reports.templating.resolver import get_nested_attr
+from template_reports.templating.parse import get_nested_attr
 from template_reports.templating.exceptions import (
     BadTagException,
     MissingDataException,
@@ -40,28 +40,28 @@ class TestParser(unittest.TestCase):
         expected = ["program", "users[is_active=True]", "email"]
         self.assertEqual(result, expected)
 
-    def test_resolve_tag_expression_simple(self):
+    def test_resolve_tag_simple(self):
         # Resolves a simple attribute.
         expr = "dummy.name"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, "Test")
 
-    def test_resolve_tag_expression_nested_underscore(self):
+    def test_resolve_tag_nested_underscore(self):
         # Resolves a nested attribute using double underscores.
         expr = "dummy.nested__key"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, "value")
 
-    def test_resolve_tag_expression_nested_period(self):
+    def test_resolve_tag_nested_period(self):
         # Resolves a nested attribute using double underscores.
         expr = "dummy.nested.key"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, "value")
 
-    def test_resolve_tag_expression_now(self):
+    def test_resolve_tag_now(self):
         # "now" should return a datetime instance (current time)
         expr = "now"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertIsInstance(result, datetime.datetime)
 
     def test_resolve_segment_with_filter(self):
@@ -87,7 +87,7 @@ class TestParser(unittest.TestCase):
 
         # Expression: container.users[is_active=True]
         expr = "container.users[is_active=True]"
-        resolved = parse_formatted_tag(expr, context)
+        resolved = resolve_formatted_tag(expr, context)
         # Expect list of users with is_active True.
         self.assertIsInstance(resolved, list)
         self.assertEqual([user.name for user in resolved], ["Alice", "Charlie"])
@@ -122,7 +122,7 @@ class TestParser(unittest.TestCase):
         # Expression with multiple conditions separated by ", "
         # Expect to filter users with name "Alice" and is_active True.
         expr = "container.users[is_active=True, name=Alice]"
-        resolved = parse_formatted_tag(expr, context)
+        resolved = resolve_formatted_tag(expr, context)
         self.assertIsInstance(resolved, list)
         # Only users meeting both conditions should remain.
         self.assertEqual(len(resolved), 2)
@@ -130,26 +130,26 @@ class TestParser(unittest.TestCase):
 
     def test_empty_expression(self):
         # Empty expression should yield an empty string.
-        self.assertEqual(parse_formatted_tag("", {}), "")
+        self.assertEqual(resolve_formatted_tag("", {}), "")
 
     def test_nonexistent_key(self):
         # Expression with a non-existent key should throw MissingDataException.
         context = {"user": {"name": "Alice"}}
         with self.assertRaises(MissingDataException):
-            parse_formatted_tag("nonexistent", context)
+            resolve_formatted_tag("nonexistent", context)
 
     def test_simple_nested_lookup(self):
         # With the context having nested dictionary.
         context = {"user": {"name": "Alice"}}
-        self.assertEqual(parse_formatted_tag("user.name", context), "Alice")
+        self.assertEqual(resolve_formatted_tag("user.name", context), "Alice")
 
-    @patch("template_reports.templating.parser.datetime")
+    @patch("template_reports.templating.resolve.datetime")
     def test_now_expression(self, mock_datetime):
         # For "now", patch datetime.datetime.now to return a fixed value.
         fixed_now = datetime.datetime(2025, 2, 18, 12, 0, 0)
         mock_datetime.datetime.now.return_value = fixed_now
         # Expression "now" should then return fixed_now.
-        result = parse_formatted_tag("now", {})
+        result = resolve_formatted_tag("now", {})
         self.assertEqual(result, fixed_now)
 
     def test_resolve_segment_with_filter_non_queryset(self):
@@ -190,31 +190,31 @@ class TestParser(unittest.TestCase):
         # For nested keys that don't exist, should return empty string.
         context = {"user": {"name": "Alice"}}
         with self.assertRaises(MissingDataException):
-            parse_formatted_tag("user.age", context)
+            resolve_formatted_tag("user.age", context)
 
     def test_expression_with_opening_brace(self):
         # Expression containing an extra opening brace should fail.
         expr = "dummy.{name}"
         with self.assertRaises(BadTagException):
-            parse_formatted_tag(expr, self.context)
+            resolve_formatted_tag(expr, self.context)
 
     def test_expression_with_closing_brace(self):
         # Expression containing an extra closing brace should fail.
         expr = "dummy.name}"
         with self.assertRaises(BadTagException):
-            parse_formatted_tag(expr, self.context)
+            resolve_formatted_tag(expr, self.context)
 
     def test_expression_with_both_extra_braces(self):
         # Expression containing both extra "{" and "}" should fail.
         expr = "dummy.{name}}"
         with self.assertRaises(BadTagException):
-            parse_formatted_tag(expr, self.context)
+            resolve_formatted_tag(expr, self.context)
 
     def test_expression_with_invalid_characters(self):
         # Expression with unexpected characters (e.g., special symbols) should fail.
         expr = "dummy.na#me"
         with self.assertRaises(BadTagException):
-            parse_formatted_tag(expr, self.context)
+            resolve_formatted_tag(expr, self.context)
 
     def test_user_filter_on_nested_attribute(self):
         # Dummy classes for filtering test.
@@ -239,7 +239,7 @@ class TestParser(unittest.TestCase):
         ]
         context = {"users": users}
         # Expression: filter users with program.is_active True and get their names.
-        result = parse_formatted_tag("users[program__is_active=True].name", context)
+        result = resolve_formatted_tag("users[program__is_active=True].name", context)
         # Expected result is a list of names for Alice and Carol.
         self.assertIsInstance(result, list)
         self.assertEqual(result, ["Alice", "Carol"])
@@ -261,13 +261,13 @@ class TestParserCallables(unittest.TestCase):
     def test_callable_no_args(self):
         # Test a callable with no arguments.
         expr = "dummy.custom()"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, "no args called")
 
     def test_callable_with_args(self):
         # Test a callable with two numeric arguments.
         expr = "dummy.multiply(3,4)"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, 12)
 
     def test_callable_mixed_args(self):
@@ -275,20 +275,20 @@ class TestParserCallables(unittest.TestCase):
         # Define a dummy method that concatenates its arguments.
         self.context["dummy"].concat = lambda a, b: f"{a}-{b}"
         expr = "dummy.concat(100, 'test')"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, "100-test")
 
     def test_malformed_callable_unmatched_parenthesis(self):
         # Test a malformed tag with unmatched round bracket.
         expr = "dummy.custom("  # missing closing ")"
         with self.assertRaises(BadTagException):
-            parse_formatted_tag(expr, self.context)
+            resolve_formatted_tag(expr, self.context)
 
     def test_malformed_callable_unmatched_square_bracket(self):
         # Test a malformed tag with unmatched square bracket.
         expr = "dummy.custom()["
         with self.assertRaises(BadTagException):
-            parse_formatted_tag(expr, self.context)
+            resolve_formatted_tag(expr, self.context)
 
 
 # Dummy class for testing nested callables with inner tags.
@@ -315,7 +315,7 @@ class TestParserNestedTags(unittest.TestCase):
         Expected: "Value is 100"
         """
         expr = "dummy.get_value($inner_value$)"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, "Value is 100")
 
     def test_tag_within_tag_multiple(self):
@@ -325,7 +325,7 @@ class TestParserNestedTags(unittest.TestCase):
         Expected: 30 (i.e. 10+20)
         """
         expr = "dummy.add($val1$,$val2$)"
-        result = parse_formatted_tag(expr, self.context)
+        result = resolve_formatted_tag(expr, self.context)
         self.assertEqual(result, 30)
 
 

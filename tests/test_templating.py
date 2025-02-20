@@ -73,7 +73,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         self.request_user = DummyRequestUser()
 
     # Normal mode tests.
-    @patch("template_reports.templating.parser.datetime.datetime")
+    @patch("template_reports.templating.resolve.datetime.datetime")
     def test_pure_now_formatting_normal(self, mock_dt):
         # Patch datetime.datetime.now in the parser module to always return self.now.
         mock_dt.now.return_value = self.now
@@ -234,7 +234,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         )
         self.assertEqual(result, tpl)
 
-    @patch("template_reports.templating.parser.datetime.datetime")
+    @patch("template_reports.templating.resolve.datetime.datetime")
     def test_now_in_mixed_text(self, mock_dt):
         mock_dt.now.return_value = self.now
         tpl = "Date is {{ now | MMMM dd, YYYY }} and time is set."
@@ -294,7 +294,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         self.request_user = DummyRequestUser()
 
     # Table mode tests.
-    @patch("template_reports.templating.parser.datetime.datetime")
+    @patch("template_reports.templating.resolve.datetime.datetime")
     def test_pure_now_formatting_table(self, mock_dt):
         # Patch datetime.datetime.now in the parser module to always return self.now.
         mock_dt.now.return_value = self.now
