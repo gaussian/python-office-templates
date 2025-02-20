@@ -22,11 +22,11 @@ def get_nested_attr(obj, attr):
             obj = obj[part]
         else:
             obj = getattr(obj, part)
-        if callable(obj):
-            try:
-                obj = obj()
-            except Exception:
-                raise TagCallableException(f"{attr} failed when calling")
+        # if callable(obj):
+        #     try:
+        #         obj = obj()
+        #     except Exception:
+        #         raise TagCallableException(f"{attr} failed when calling")
     return obj
 
 
