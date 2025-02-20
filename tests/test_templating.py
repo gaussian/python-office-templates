@@ -153,7 +153,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         # Dynamically add a callable attribute to user1.
         self.user1.get_display = lambda: self.user1.name.upper()
         self.context["user"] = self.user1
-        tpl = "Display: {{ user.get_display }}"
+        tpl = "Display: {{ user.get_display() }}"
         result = process_text(
             tpl,
             self.context,

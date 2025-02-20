@@ -2,10 +2,10 @@ import re
 import datetime
 
 
-from .exceptions import BadTagException, MissingDataException
+from .exceptions import BadTagException, MissingDataException, TagCallableException
 from .formatting import convert_format
 from .permissions import enforce_permissions
-from .resolver import get_nested_attr, evaluate_condition
+from .resolver import get_nested_attr, evaluate_condition, parse_callable_args
 
 BAD_SEGMENT_PATTERN = re.compile(r"^[#%]*$")
 
@@ -101,59 +101,64 @@ def split_expression(expr):
 
 def resolve_segment(current, segment, perm_user=None):
     """
-    Resolve one segment of a dotted expression. A segment may include an optional filter in brackets,
-    e.g. "users[is_active=True]".
-
-    - If current is a list, we apply resolution to each item and flatten the results.
-    - If the value is a "QuerySet-like" object (has filter method), we either:
-        * apply filter(**filter_dict) if bracket expression is given
-        * or call .all() if available, then convert it to a list
-      and then we continue resolution if there are more segments (by returning that list).
-    - If filter_expr is present for a non-queryset, we manually filter items in a list.
-
+    Resolve one segment of a dotted expression. Supports an optional callable part.
+    For example: "custom_function()" or "custom_function(arg1,123)"
+    and an optional filter in brackets.
     """
-    m = re.match(r"(\w+(?:__\w+)*)(\[(.*?)\])?$", segment)
+    # Edge case handling: Check for unmatched round or square brackets.
+    if segment.count("(") != segment.count(")"):
+        raise BadTagException(f"Unmatched round brackets in segment: '{segment}'")
+    if segment.count("[") != segment.count("]"):
+        raise BadTagException(f"Unmatched square brackets in segment: '{segment}'")
+
+    # Updated regex captures optional callable arguments in parentheses and an optional filter.
+    m = re.match(r"^(\w+(?:__\w+)*)(?:\((.*?)\))?(?:\[(.*?)\])?$", segment)
     if not m:
-        raise BadTagException(f"{segment} in tag is malformed")
-
+        raise BadTagException(f"Segment '{segment}' is malformed")
     attr_name = m.group(1)
-    filter_expr = m.group(3)
+    call_args_str = m.group(2)  # may be None
+    filter_expr = m.group(3)  # may be None
 
-    # 1) If current is a list, apply resolution to each item
+    # If current is a list, apply resolution for each item.
     if isinstance(current, list):
         results = []
         for item in current:
-            res = resolve_segment(
-                item,
-                segment,
-                perm_user=perm_user,
-            )
+            res = resolve_segment(item, segment, perm_user=perm_user)
             if isinstance(res, list):
                 results.extend(res)
             else:
                 results.append(res)
-        # List results
         return results
 
-    # 2) Get the attribute from the current object
+    # Retrieve the attribute.
     try:
         value = get_nested_attr(current, attr_name)
     except (AttributeError, KeyError) as e:
         raise MissingDataException(f"{segment} not found in {current}")
 
-    # 4) If it's a "Django-like" QuerySet that has .filter(...)
+    # If a callable part is provided, call the function.
+    if call_args_str is not None:
+        if not callable(value):
+            raise TagCallableException(f"Attribute '{attr_name}' is not callable.")
+        # Parse the comma-separated arguments; only int, float, and str are allowed.
+        args = parse_callable_args(call_args_str)
+        try:
+            value = value(*args)
+        except Exception as e:
+            raise TagCallableException(
+                f"Error calling '{attr_name}' with arguments {args}: {e}"
+            )
+
+    # ...existing code to handle QuerySet-like filtering and permissions...
     if value is not None and hasattr(value, "filter") and callable(value.filter):
-        # If we have a filter expression in brackets, parse it
         if filter_expr:
             conditions = [c.strip() for c in filter_expr.split(",")]
             filter_dict = {}
             for cond in conditions:
-                # e.g. is_active=True
                 m2 = re.match(r"([\w__]+)\s*=\s*(.+)", cond)
                 if m2:
                     key, val = m2.groups()
                     val = val.strip()
-                    # strip quotes if present
                     if (val.startswith('"') and val.endswith('"')) or (
                         val.startswith("'") and val.endswith("'")
                     ):
@@ -161,17 +166,12 @@ def resolve_segment(current, segment, perm_user=None):
                     filter_dict[key] = val
             value = value.filter(**filter_dict)
         else:
-            # No filter expression - treat it like .all()
             if hasattr(value, "all") and callable(value.all):
                 value = value.all()
-        # Convert the QuerySet to a list for further resolution if there's another segment
         return list(value)
 
-    # 5) Otherwise it's a regular object or Django model
     else:
         value_list = value if isinstance(value, list) else [value]
-
-        # If there's a filter expression on a non-queryset, treat 'value' as a list and filter it
         if filter_expr:
             conditions = [cond.strip() for cond in filter_expr.split(",")]
             value = [
@@ -179,9 +179,6 @@ def resolve_segment(current, segment, perm_user=None):
                 for item in value_list
                 if all(evaluate_condition(item, cond) for cond in conditions)
             ]
-
-        # Check permissions
         for value_item in value_list:
             enforce_permissions(value_item, perm_user)
-
         return value

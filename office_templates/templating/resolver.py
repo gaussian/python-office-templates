@@ -1,7 +1,5 @@
 import re
 
-from .exceptions import TagCallableException
-
 
 def get_nested_attr(obj, attr):
     """
@@ -22,11 +20,6 @@ def get_nested_attr(obj, attr):
             obj = obj[part]
         else:
             obj = getattr(obj, part)
-        # if callable(obj):
-        #     try:
-        #         obj = obj()
-        #     except Exception:
-        #         raise TagCallableException(f"{attr} failed when calling")
     return obj
 
 
@@ -78,3 +71,14 @@ def parse_value(val_str):
     ):
         return val_str[1:-1]
     return val_str
+
+
+def parse_callable_args(args_str: str) -> list:
+    """
+    Split a comma-separated argument string and convert each argument using parse_value.
+    Only int, float, or str are allowed.
+    """
+    if not args_str.strip():
+        return []
+    args = [arg.strip() for arg in args_str.split(",")]
+    return [parse_value(arg) for arg in args]

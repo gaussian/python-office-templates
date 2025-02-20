@@ -20,9 +20,6 @@ class TestResolver(unittest.TestCase):
         # Test getting a simple attribute.
         dummy = Dummy(42)
         self.assertEqual(get_nested_attr(dummy, "value"), 42)
-        # Test calling a method.
-        dummy.method_called = dummy.method
-        self.assertEqual(get_nested_attr(dummy, "method_called"), 42)
 
     def test_get_nested_attr_dict(self):
         # Test nested dictionary attribute.

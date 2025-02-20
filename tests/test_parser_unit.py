@@ -186,15 +186,6 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(MissingDataException):
             resolve_segment("abc#", "xyz")
 
-    def test_get_nested_attr_with_callable(self):
-        # Test that if an attribute is callable, it gets called.
-        obj = Dummy(name=lambda: "test", value=123)
-        self.assertEqual(get_nested_attr(obj, "name"), "test")
-        # If calling raises exception, should convert exception
-        obj_bad = Dummy(name=lambda: 1 / 0, value=123)
-        with self.assertRaises(TagCallableException):
-            get_nested_attr(obj_bad, "name")
-
     def test_parse_expression_with_nonexistent_nested_attr(self):
         # For nested keys that don't exist, should return empty string.
         context = {"user": {"name": "Alice"}}
@@ -252,6 +243,52 @@ class TestParser(unittest.TestCase):
         # Expected result is a list of names for Alice and Carol.
         self.assertIsInstance(result, list)
         self.assertEqual(result, ["Alice", "Carol"])
+
+
+# Dummy class with callable attributes for testing.
+class DummyCallable:
+    def custom(self):
+        return "no args called"
+
+    def multiply(self, a, b):
+        return a * b
+
+
+class TestParserCallables(unittest.TestCase):
+    def setUp(self):
+        self.context = {"dummy": DummyCallable()}
+
+    def test_callable_no_args(self):
+        # Test a callable with no arguments.
+        expr = "dummy.custom()"
+        result = parse_formatted_tag(expr, self.context)
+        self.assertEqual(result, "no args called")
+
+    def test_callable_with_args(self):
+        # Test a callable with two numeric arguments.
+        expr = "dummy.multiply(3,4)"
+        result = parse_formatted_tag(expr, self.context)
+        self.assertEqual(result, 12)
+
+    def test_callable_mixed_args(self):
+        # Test a callable with numeric and string arguments.
+        # Define a dummy method that concatenates its arguments.
+        self.context["dummy"].concat = lambda a, b: f"{a}-{b}"
+        expr = "dummy.concat(100, 'test')"
+        result = parse_formatted_tag(expr, self.context)
+        self.assertEqual(result, "100-test")
+
+    def test_malformed_callable_unmatched_parenthesis(self):
+        # Test a malformed tag with unmatched round bracket.
+        expr = "dummy.custom("  # missing closing ")"
+        with self.assertRaises(BadTagException):
+            parse_formatted_tag(expr, self.context)
+
+    def test_malformed_callable_unmatched_square_bracket(self):
+        # Test a malformed tag with unmatched square bracket.
+        expr = "dummy.custom()["
+        with self.assertRaises(BadTagException):
+            parse_formatted_tag(expr, self.context)
 
 
 if __name__ == "__main__":
