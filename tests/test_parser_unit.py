@@ -291,5 +291,43 @@ class TestParserCallables(unittest.TestCase):
             parse_formatted_tag(expr, self.context)
 
 
+# Dummy class for testing nested callables with inner tags.
+class DummyNested:
+    def get_value(self, x):
+        return f"Value is {x}"
+
+    def add(self, a, b):
+        return a + b
+
+    def outer(self, x):
+        return f"Outer {x}"
+
+
+class TestParserNestedTags(unittest.TestCase):
+    def setUp(self):
+        self.dummy = DummyNested()
+        self.context = {"dummy": self.dummy, "inner_value": 100, "val1": 10, "val2": 20}
+
+    def test_tag_within_tag_single(self):
+        """
+        Test a tag-within-a-tag scenario with a single inner tag.
+        Example: {{ dummy.get_value($inner_value$) }}
+        Expected: "Value is 100"
+        """
+        expr = "dummy.get_value($inner_value$)"
+        result = parse_formatted_tag(expr, self.context)
+        self.assertEqual(result, "Value is 100")
+
+    def test_tag_within_tag_multiple(self):
+        """
+        Test a callable tag with multiple inner tags as arguments.
+        Example: {{ dummy.add($val1$,$val2$) }}
+        Expected: 30 (i.e. 10+20)
+        """
+        expr = "dummy.add($val1$,$val2$)"
+        result = parse_formatted_tag(expr, self.context)
+        self.assertEqual(result, 30)
+
+
 if __name__ == "__main__":
     unittest.main()
