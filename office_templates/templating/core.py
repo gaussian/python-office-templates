@@ -13,6 +13,11 @@ import re
 from .parser import parse_formatted_tag
 
 
+def get_matching_tags(text):
+    pattern = re.compile(r"\{\{(.*?)\}\}")
+    return list(pattern.finditer(text))
+
+
 def process_text(
     text,
     context,
@@ -32,8 +37,7 @@ def process_text(
     a list of strings is returned, where each string is the original text with that tag replaced
     by one of the list items. Otherwise, the tag is replaced inline.
     """
-    pattern = re.compile(r"\{\{(.*?)\}\}")
-    matches = list(pattern.finditer(text))
+    matches = get_matching_tags(text)
 
     # For table mode, ensure exactly one tag is present.
     if mode == "table" and len(matches) != 1:

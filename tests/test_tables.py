@@ -94,6 +94,16 @@ class DummyParagraph:
         self.runs = [DummyRun(text)]
         self._p = DummyElement("")  # dummy underlying XML
 
+    def clear(self):
+        """Clear existing runs."""
+        self.runs = []
+
+    def add_run(self):
+        """Add a new run and return it."""
+        run = DummyRun("")
+        self.runs.append(run)
+        return run
+
 
 class DummyRun:
     def __init__(self, text):
@@ -163,7 +173,7 @@ class TestTables(unittest.TestCase):
         self.assertEqual(cell_wrapper.text, "First")
         # The table should now have the original row plus 2 new rows.
         self.assertEqual(
-            len(table.rows), 1
+            len(table.rows), 3
         )  # Our dummy rows are appended to the XML table element
         # But our function uses: table_element.append(new_row_element)
         # So we simulate that by checking row.parent appended rows.
@@ -218,30 +228,40 @@ class TestTables(unittest.TestCase):
             tables.process_text = original_process_text
 
     def test_process_table_cell_mixed_text(self):
-        # For a cell that is not a pure placeholder, process_table_cell should call merge_runs_in_paragraph.
-        # In this simple test, we simulate that no cloning happens.
-        non_pure = "Prefix {{ test }} Suffix"
+        # For a cell that is not a pure placeholder, process_table_cell should call
+        # process_paragraph and update the paragraph's runs.
+        non_pure = "Prefix {{ test }} Suffix {{ test }}"
         cell_wrapper = DummyCellWrapper(non_pure)
-        # For testing, override process_paragraph to simply update paragraph text.
-        from template_reports.pptx_renderer import tables
+        import template_reports.pptx_renderer.tables as tables_module
 
-        original_para_processor = tables.process_paragraph
+        # Save the original local binding for process_paragraph in tables module.
+        original_para_processor = tables_module.__dict__.get("process_paragraph")
         try:
 
             def dummy_para_process(paragraph, context, perm_user, mode):
-                paragraph.text = paragraph.text.replace("{{ test }}", "VALUE")
+                # Get full text from paragraph runs.
+                full_text = "".join(run.text for run in paragraph.runs)
+                # Replace the placeholder with VALUE.
+                new_text = full_text.replace("{{ test }}", "VALUE")
+                # Clear runs and add a new run with new text.
+                paragraph.clear()
+                paragraph.add_run().text = new_text
 
-            tables.process_paragraph = dummy_para_process
+            # Override the local process_paragraph reference in tables module.
+            tables_module.__dict__["process_paragraph"] = dummy_para_process
+
             context = {"test": "VALUE"}
-            process_table_cell(
-                cell_wrapper,
-                context,
-                perm_user=None,
-            )
-            # Check that the cell's text frame paragraphs have been updated.
-            self.assertIn("VALUE", cell_wrapper.text_frame.paragraphs[0].runs[0].text)
+            # Call process_table_cell (which will use our dummy process_paragraph).
+            from template_reports.pptx_renderer.tables import process_table_cell
+
+            process_table_cell(cell_wrapper, context, perm_user=None)
+
+            # Retrieve updated text from the first paragraph's first run.
+            updated_text = cell_wrapper.text_frame.paragraphs[0].runs[0].text
+            self.assertIn("VALUE", updated_text)
         finally:
-            tables.process_paragraph = original_para_processor
+            # Restore the original process_paragraph.
+            tables_module.__dict__["process_paragraph"] = original_para_processor
 
 
 if __name__ == "__main__":

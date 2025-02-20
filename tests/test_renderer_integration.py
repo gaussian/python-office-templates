@@ -51,8 +51,14 @@ class TestRendererIntegration(unittest.TestCase):
         rows, cols = 1, 1
         left, top, width, height = Inches(0.5), Inches(2), Inches(4), Inches(0.8)
         table_shape = self.slide.shapes.add_table(rows, cols, left, top, width, height)
+        # Use the original mixed text with prefix.
         table_cell = table_shape.table.cell(0, 0)
-        table_cell.text = "{{ program.users.email }}"
+        table_cell.text = "Here: {{ program.users.email }}"
+        self.table_shape_index = None
+        for idx, shape in enumerate(self.slide.shapes):
+            if getattr(shape, "has_table", False) and shape.has_table:
+                self.table_shape_index = idx
+                break
 
         # Save this PPTX to a temporary file.
         self.temp_input = tempfile.mktemp(suffix=".pptx")
@@ -83,12 +89,14 @@ class TestRendererIntegration(unittest.TestCase):
 
     def test_integration_renderer(self):
         # Run the renderer integration.
-        rendered, _ = render_pptx(
+        rendered, errors = render_pptx(
             self.temp_input,
             self.context,
             self.temp_output,
             perm_user=None,
         )
+        self.assertIsNone(errors)
+
         # Open the rendered PPTX.
         prs_out = Presentation(rendered)
         # Test text box content.
@@ -96,22 +104,20 @@ class TestRendererIntegration(unittest.TestCase):
         txt = textbox.text_frame.text
         self.assertIn("Welcome, Alice.", txt)
         self.assertIn("Program: Test Program", txt)
-        # Test table: the table should have expanded rows for each user email.
-        table_shape = None
-        for shape in prs_out.slides[0].shapes:
-            if hasattr(shape, "has_table") and shape.has_table:
-                table_shape = shape
-                break
+        # Check table content.
+        table_shape = prs_out.slides[0].shapes[self.table_shape_index]
         self.assertIsNotNone(table_shape)
-        # In normal mode for tables, pure placeholders return a list; so we expect one cell in the first row,
-        # and additional rows for subsequent items.
-        emails = [u.email for u in self.program["users"]]
-        # Check that the first row cell contains the first email.
-        first_cell_text = table_shape.table.cell(0, 0).text.strip()
-        self.assertEqual(first_cell_text, emails[0])
-        # There should be additional rows for each remaining email.
-        # Since our row-expander is a hack, we'll simply check that at least one additional row exists.
-        self.assertTrue(len(list(table_shape.table.rows)) > 1)
+        # The original cell text is "Here: {{ program.users.email }}", so after rendering
+        # it should expand into as many rows as there are program.users.
+        expected_users = [u.email for u in self.program["users"]]
+        # Get all rows from the table.
+        rows = list(table_shape.table.rows)
+        self.assertEqual(len(rows), len(expected_users))
+        # For each row, check that its cell text equals "Here: " and then the corresponding email.
+        for i, row in enumerate(rows):
+            cell_text = row.cells[0].text.strip()
+            expected = f"Here: {expected_users[i]}"
+            self.assertEqual(cell_text, expected)
 
 
 if __name__ == "__main__":

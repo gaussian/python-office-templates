@@ -44,11 +44,6 @@ def parse_formatted_tag(expr: str, context, perm_user=None):
     # First, replace sub-tags enclosed in $ with their corresponding resolved values.
     expr = substitute_inner_tags(expr, context, perm_user)
 
-    import logging
-
-    logging.error("XX")
-    logging.error(expr)
-
     if "{" in expr or "}" in expr:
         raise BadTagException(
             f"Bad format in tag '{expr}': unexpected curly brace detected."
