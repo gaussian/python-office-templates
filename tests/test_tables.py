@@ -1,10 +1,11 @@
 import unittest
 from unittest.mock import patch
 
+from template_reports.pptx_renderer.exceptions import TableError
 from template_reports.pptx_renderer.tables import (
     process_table_cell,
     clone_row_with_value,
-    expand_table_cell_with_list,
+    fill_column_with_list,
 )
 from template_reports.templating import process_text
 
@@ -25,6 +26,28 @@ class DummyElement:
 
     def getparent(self):
         return self.parent
+
+    # Add this method so that _Cell can call it.
+    def get_or_add_txBody(self):
+        return self
+
+    # Added clear_content to simulate real behavior.
+    def clear_content(self):
+        self.text = ""
+
+    # Add this to avoid AttributeError when cell.text is assigned:
+    def add_p(self):
+        # Return a new dummy paragraph element
+        return DummyElement("")
+
+    def _append_text(self, txt, p):
+        p.text += txt
+        return p
+
+    # NEW: append_text method to satisfy the call from pptx.text.text.
+    def append_text(self, txt):
+        self.text += txt
+        return self
 
     def __repr__(self):
         return f"DummyElement(text={self.text})"
@@ -59,19 +82,23 @@ class DummyTable:
         row.parent = self
         self.rows.append(row)
 
+    def __iter__(self):
+        return iter(self.rows)
+
     def __repr__(self):
         return f"DummyTable(rows={self.rows})"
 
 
 class DummyCell:
     """
-    Dummy implementation of pptx.table._Cell.
+    A patched dummy version of pptx.table._Cell.
     Simply wraps a target DummyElement; setting text updates target.text.
+    Avoids calling super() and related issues.
     """
 
-    def __init__(self, target, row):
+    def __init__(self, target, parent):
         self.target = target
-        self.row = row
+        self.parent = parent
 
     @property
     def text(self):
@@ -134,7 +161,7 @@ class DummyCellWrapper:
 class TestTables(unittest.TestCase):
 
     # --- Tests for clone_row_with_value ---
-    @patch("pptx.table._Cell", new=DummyCell)
+    @patch("template_reports.pptx_renderer.tables._Cell", new=DummyCell)
     def test_clone_row_with_value_normal(self):
         # Create a dummy row with three cells.
         cell1 = DummyElement("A")
@@ -155,20 +182,20 @@ class TestTables(unittest.TestCase):
         # If cell_index is out of range, row should remain unchanged.
         cell1 = DummyElement("X")
         original_row = DummyRow([cell1])
-        cloned = clone_row_with_value(original_row, 5, "NEW")
-        self.assertEqual(cloned[0].text, "X")
+        with self.assertRaises(TableError):
+            clone_row_with_value(original_row, 5, "NEW")
 
-    # --- Tests for expand_table_cell_with_list ---
-    @patch("pptx.table._Cell", new=DummyCell)
-    def test_expand_table_cell_with_list_normal(self):
+    # --- Tests for fill_column_with_list ---
+    @patch("template_reports.pptx_renderer.tables._Cell", new=DummyCell)
+    def test_fill_column_with_list_normal(self):
         # Create a dummy table structure with one row and one cell.
         cell_wrapper = DummyCellWrapper("ORIGINAL")
         row = DummyRow([cell_wrapper._tc])
         table = DummyTable()
         table.append(row)
-        # Call expand_table_cell_with_list on the cell with a list of items.
+        # Call fill_column_with_list on the cell with a list of items.
         items = ["First", "Second", "Third"]
-        expand_table_cell_with_list(cell_wrapper, items)
+        fill_column_with_list(cell_wrapper, items)
         # The original cell gets updated with first item.
         self.assertEqual(cell_wrapper.text, "First")
         # The table should now have the original row plus 2 new rows.
@@ -187,42 +214,41 @@ class TestTables(unittest.TestCase):
         # Verify that the cloned row's cell at index 0 has text "Second".
         self.assertEqual(new_row[0].text, "Second")
 
-    def test_expand_table_cell_with_list_empty(self):
+    def test_fill_column_with_list_empty(self):
         cell_wrapper = DummyCellWrapper("NonEmpty")
         # When items list is empty, cell text should be set to empty string.
-        expand_table_cell_with_list(cell_wrapper, [])
+        fill_column_with_list(cell_wrapper, [])
         self.assertEqual(cell_wrapper.text, "")
 
     # --- Tests for process_table_cell ---
     def test_process_table_cell_pure_placeholder(self):
-        # For a pure placeholder, process_table_cell should call process_text in table mode
-        # and then update cell text or expand rows.
-        # We'll simulate a cell where text equals a pure placeholder.
+        # For a pure placeholder, process_table_cell should use table mode.
         placeholder = "{{ test }}"
         cell_wrapper = DummyCellWrapper(placeholder)
 
-        # Define a dummy process_text that returns a list for test.
+        # Set up a dummy table structure:
+        # Create a dummy row containing the cell's XML element.
+        row = DummyRow([cell_wrapper._tc])
+        # Create a dummy table and append the new row.
+        dummy_table = DummyTable()
+        dummy_table.append(row)
+
+        # Now, cell_wrapper._tc.getparent() returns row and row.getparent() returns dummy_table.
+
+        # Define a dummy process_text that returns a list.
         def dummy_process_text(text, context, perm_user, mode):
             if mode == "table":
                 return ["Row1", "Row2"]
             return "Row1"
 
-        # Patch process_text locally.
         original_process_text = process_text
         try:
-            # Override the row-expander's process_text function
             from template_reports.pptx_renderer import tables
 
             tables.process_text = dummy_process_text
-            # Create dummy context.
             context = {"test": "ignored"}
-            # Call process_table_cell.
-            process_table_cell(
-                cell_wrapper,
-                context,
-                None,
-            )
-            # Since dummy_process_text returned a list, the cell's text should have been updated with first item.
+            process_table_cell(cell_wrapper, context, None)
+            # Since dummy_process_text returned a list, the original cell should be updated to first item.
             self.assertEqual(cell_wrapper.text, "Row1")
         finally:
             tables.process_text = original_process_text
