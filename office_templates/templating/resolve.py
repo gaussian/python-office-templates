@@ -2,7 +2,7 @@ import re
 import datetime
 
 from .exceptions import BadTagException, MissingDataException, TagCallableException
-from .formatting import convert_format
+from .formatting import convert_date_format
 from .parse import get_nested_attr, evaluate_condition, parse_callable_args
 from .permissions import enforce_permissions
 
@@ -15,20 +15,37 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
 
     This function supports several features:
 
-      1. It allows the use of a pipe operator (|) to specify a format string for date or datetime values.
+      1. Simple replacements of tag expressions with their corresponding values.
+
+      2. Nested attributes and dictionary values, following "." or "__" paths.
+
+      3. Handling of lists, where a tag expression may return a list of values, each
+        of which is processed separately.
+        For example:
+            {{ users.name }}
+
+      4. Callable methods with arguments, eg "user.get_name()" or "team.get_role(mem)".
+
+      5. Filtering expressions for list or queryset-like (eg Django) objects.
+
+      6. Certain keywords, such as "now" to return the current datetime.
+
+      7. Use of a pipe operator (|) to specify a format string for date or datetime values.
          For example:
              {{ now | "%Y-%m-%d" }}
          will return the current date formatted as specified.
 
-      2. It supports "nested tags" or "tag within a tag" where a portion of the tag expression is enclosed
+      8. [CURRENTLY DISABLED] Use of a pipe operator to retrieve more than one attribute from an object/dictionary
+         and return a tuple of values. For example:
+             {{ user | email, name }}
+             {{ team.users | email, phone }}
+
+      9. "Nested tags" or "tag within a tag" where a portion of the tag expression is enclosed
          within dollar signs ($). These inner sub-tags are resolved first and their result replaces the sub-tag.
          For example:
              {{ user.custom_function($value$) }}
          If value resolves to 45, the expression will first convert to:
              {{ user.custom_function(45) }}
-
-      3. After processing any inner tags and formatting, the expression is passed to the tag resolution logic,
-         which parses dotted paths, callable methods (with or without arguments), and filtering expressions.
 
     Parameters:
       expr (str): The complete tag expression (without the double curly braces) to be resolved.
@@ -50,26 +67,38 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
         )
 
     # Split by the pipe operator to separate the tag expression from an optional format string.
-    parts = expr.split("|", 1)
+    parts = expr.split("|")
+    if len(parts) > 2:
+        raise BadTagException(f"Bad format in tag '{expr}': too many pipe operators.")
     value_expr = parts[0].strip()
 
-    fmt_str = None
+    format_expr = None
     if len(parts) == 2:
-        fmt_str = parts[1].strip()
-        if (fmt_str.startswith('"') and fmt_str.endswith('"')) or (
-            fmt_str.startswith("'") and fmt_str.endswith("'")
+        format_expr = parts[1].strip()
+        if (format_expr.startswith('"') and format_expr.endswith('"')) or (
+            format_expr.startswith("'") and format_expr.endswith("'")
         ):
-            fmt_str = fmt_str[1:-1]
+            format_expr = format_expr[1:-1]
 
     # Resolve the tag expression (without the formatting part).
     value = resolve_tag(value_expr, context, perm_user=perm_user)
 
-    # If a format string is provided and the value supports strftime, format it.
-    if fmt_str and hasattr(value, "strftime"):
-        try:
-            return value.strftime(convert_format(fmt_str))
-        except Exception as e:
-            raise BadTagException(f"Bad format in tag '{expr}': {e}.")
+    # If a format string is provided...
+    if format_expr:
+        # If the value supports strftime, format it.
+        if hasattr(value, "strftime"):
+            try:
+                return value.strftime(convert_date_format(format_expr))
+            except Exception as e:
+                raise BadTagException(f"Bad format in tag '{expr}': {e}.")
+        # If the format string contains a comma, split it to retrieve multiple attributes.
+        # elif "," in format_expr:
+        #     attrs = [a.strip() for a in format_expr.split(",")]
+        #     return tuple(
+        #         resolve_tag(f"{value_expr}.{attr}", context, perm_user=perm_user)
+        #         for attr in attrs
+        #     )
+
     else:
         return value
 
