@@ -16,7 +16,7 @@ Supported tokens:
 """
 
 
-def convert_format(custom_format):
+def convert_date_format(custom_format):
     mapping = {
         "MMMM": "%B",
         "MMM": "%b",
