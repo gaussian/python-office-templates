@@ -11,17 +11,18 @@ Permission checking is enforced during parsing.
 
 import re
 
+from .exceptions import BadTemplateModeError
 from .resolve import resolve_formatted_tag
 
 
-def get_matching_tags(text):
+def get_matching_tags(text: str):
     pattern = re.compile(r"\{\{(.*?)\}\}")
     return list(pattern.finditer(text))
 
 
 def process_text(
-    text,
-    context,
+    text: str,
+    context: dict,
     perm_user=None,
     mode="normal",
     delimiter=", ",
@@ -42,7 +43,9 @@ def process_text(
 
     # For table mode, ensure exactly one tag is present.
     if mode == "table" and len(matches) != 1:
-        raise ValueError("Table mode supports mixed text with exactly one placeholder.")
+        raise BadTemplateModeError(
+            "Table mode supports mixed text with exactly one placeholder."
+        )
 
     # If no tags found, return text as-is.
     if not matches:

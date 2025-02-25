@@ -10,6 +10,12 @@ class MissingDataException(Exception):
     pass
 
 
+class BadTemplateModeError(Exception):
+    """Raised when an invalid mode is passed to process_text."""
+
+    pass
+
+
 class TagCallableException(Exception):
     """Raised when a callable in a tag throws an exception."""
 

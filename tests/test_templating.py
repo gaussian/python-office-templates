@@ -1,12 +1,14 @@
-import unittest
 import datetime
 import re
+import unittest
 from unittest.mock import patch
-from template_reports.templating.exceptions import PermissionDeniedException
 
-# Import main function from our templating module.
+from template_reports.templating.exceptions import (
+    BadTemplateModeError,
+    PermissionDeniedException,
+    MissingDataException,
+)
 from template_reports.templating.core import process_text
-from template_reports.templating.exceptions import MissingDataException
 
 
 # ----- Dummy Classes for Testing -----
@@ -336,7 +338,7 @@ class TestTemplatingTableMode(unittest.TestCase):
 
     def test_mixed_text_multiple_placeholders_table(self):
         tpl = "User: {{ user.name }} and Email: {{ user.email }}"
-        with self.assertRaises(ValueError):
+        with self.assertRaises(BadTemplateModeError):
             process_text(
                 tpl,
                 self.context,
