@@ -4,6 +4,7 @@ from pptx.chart.data import ChartData
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx import Presentation
 from pptx.util import Inches
+import sys
 
 from template_reports.pptx_renderer.charts import process_chart
 
@@ -50,8 +51,7 @@ class DummyChart:
 
 
 class TestProcessChart(unittest.TestCase):
-    @patch("template_reports.pptx_renderer.charts.load_workbook")
-    def test_chart_data_replacement(self, mock_load_workbook):
+    def test_chart_data_replacement(self):
         # Setup test data
         context = {"test": "Replaced"}
         dummy_plot = DummyPlot(categories=["Category {{ test }}", "Static"])
@@ -66,15 +66,31 @@ class TestProcessChart(unittest.TestCase):
             # Series data row
             [DummyCell("Series {{ test }}"), DummyCell(1.0), DummyCell(2.0)],
         ]
-        mock_load_workbook.return_value = mock_workbook
 
-        # Mock chart_axes_are_swapped to return False
-        with patch(
-            "template_reports.pptx_renderer.charts.chart_axes_are_swapped",
-            return_value=False,
+        # Mock the BytesIO to avoid actual file opening
+        mock_bytesio = MagicMock()
+
+        # Create a mock module to replace openpyxl
+        mock_openpyxl = MagicMock()
+        mock_openpyxl.load_workbook.return_value = mock_workbook
+
+        # Patch openpyxl import inside the function
+        with (
+            patch.dict("sys.modules", {"openpyxl": mock_openpyxl}),
+            patch(
+                "template_reports.pptx_renderer.charts.BytesIO", return_value=mock_bytesio
+            ),
+            patch(
+                "template_reports.pptx_renderer.charts.chart_axes_are_swapped",
+                return_value=False,
+            ),
         ):
+
             # Call process_chart
             process_chart(dummy_chart, context, perm_user=None)
+
+        # Verify that load_workbook was called with the BytesIO instance
+        mock_openpyxl.load_workbook.assert_called_once_with(mock_bytesio)
 
         # Verify chart data was replaced correctly
         self.assertIsNotNone(dummy_chart.replaced_data)
