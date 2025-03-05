@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 
-from template_reports.pptx_renderer.exceptions import TableError
-from template_reports.pptx_renderer.tables import (
+from template_reports.office_renderer.exceptions import TableError
+from template_reports.office_renderer.tables import (
     process_table_cell,
     clone_row_with_value,
     fill_column_with_list,
@@ -161,7 +161,7 @@ class DummyCellWrapper:
 class TestTables(unittest.TestCase):
 
     # --- Tests for clone_row_with_value ---
-    @patch("template_reports.pptx_renderer.tables._Cell", new=DummyCell)
+    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
     def test_clone_row_with_value_normal(self):
         # Create a dummy row with three cells.
         cell1 = DummyElement("A")
@@ -186,7 +186,7 @@ class TestTables(unittest.TestCase):
             clone_row_with_value(original_row, 5, "NEW")
 
     # --- Tests for fill_column_with_list ---
-    @patch("template_reports.pptx_renderer.tables._Cell", new=DummyCell)
+    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
     def test_fill_column_with_list_normal(self):
         # Create a dummy table structure with one row and one cell.
         cell_wrapper = DummyCellWrapper("ORIGINAL")
@@ -243,7 +243,7 @@ class TestTables(unittest.TestCase):
 
         original_process_text = process_text
         try:
-            from template_reports.pptx_renderer import tables
+            from template_reports.office_renderer import tables
 
             tables.process_text = dummy_process_text
             context = {"test": "ignored"}
@@ -258,7 +258,7 @@ class TestTables(unittest.TestCase):
         # process_paragraph and update the paragraph's runs.
         non_pure = "Prefix {{ test }} Suffix {{ test }}"
         cell_wrapper = DummyCellWrapper(non_pure)
-        import template_reports.pptx_renderer.tables as tables_module
+        import template_reports.office_renderer.tables as tables_module
 
         # Save the original local binding for process_paragraph in tables module.
         original_para_processor = tables_module.__dict__.get("process_paragraph")
@@ -278,7 +278,7 @@ class TestTables(unittest.TestCase):
 
             context = {"test": "VALUE"}
             # Call process_table_cell (which will use our dummy process_paragraph).
-            from template_reports.pptx_renderer.tables import process_table_cell
+            from template_reports.office_renderer.tables import process_table_cell
 
             process_table_cell(cell_wrapper, context, perm_user=None)
 
