@@ -5,7 +5,7 @@ import unittest
 from pptx import Presentation
 from pptx.util import Inches
 
-from template_reports.pptx_renderer.renderer import render_pptx
+from template_reports.office_renderer.renderer import render_pptx
 
 
 # Dummy objects for testing renderer behavior.
