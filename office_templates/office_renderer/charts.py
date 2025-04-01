@@ -55,6 +55,11 @@ def process_chart(chart: Chart, context: dict, perm_user):
     plot = chart.plots[0]
     raw_categories = [str(cat) for cat in plot.categories]
     categories = process_chart_list(raw_categories, **process_kwargs, as_float=False)
+    # Need at least one category, otherwise the chart will not display.
+    if not categories:
+        raise ChartError(
+            f"Chart must have at least one category. Check this placeholder: {raw_categories}."
+        )
 
     # (4) Create a new ChartData object and populate it.
     chart_data = ChartData()

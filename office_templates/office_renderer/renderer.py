@@ -19,7 +19,14 @@ def render_pptx(template, context, output, perm_user):
 
     errors = []
 
-    for slide in prs.slides:
+    for i, slide in enumerate(prs.slides):
+        # Add extra context per slide.
+        slide_number = i + 1
+        slide_context = {
+            **context,
+            "slide_number": slide_number,
+        }
+
         for shape in slide.shapes:
             # 1) Process text frames (non-table).
             if hasattr(shape, "text_frame"):
@@ -28,34 +35,36 @@ def render_pptx(template, context, output, perm_user):
                     try:
                         process_paragraph(
                             paragraph,
-                            context,
+                            context=slide_context,
                             perm_user=perm_user,
                             mode="normal",  # for text frames
                         )
                     except Exception as e:
-                        errors.append(f"Error in paragraph: {e}")
+                        errors.append(f"Error in paragraph (slide {slide_number}): {e}")
             # 2) Process tables.
             if getattr(shape, "has_table", False):
                 for row in shape.table.rows:
                     for cell in row.cells:
                         try:
                             process_table_cell(
-                                cell,
-                                context,
-                                perm_user,
+                                cell=cell,
+                                context=slide_context,
+                                perm_user=perm_user,
                             )
                         except Exception as e:
-                            errors.append(f"Error in table cell: {e}")
+                            errors.append(
+                                f"Error in table cell (slide {slide_number}): {e}"
+                            )
             # 3) Process chart spreadsheets.
             if getattr(shape, "has_chart", False):
                 try:
                     process_chart(
-                        shape.chart,
-                        context,
-                        perm_user,
+                        chart=shape.chart,
+                        context=slide_context,
+                        perm_user=perm_user,
                     )
                 except Exception as e:
-                    errors.append(f"Error in chart: {e}")
+                    errors.append(f"Error in chart (slide {slide_number}): {e}")
 
     if errors:
         print("Rendering aborted due to the following errors:")
