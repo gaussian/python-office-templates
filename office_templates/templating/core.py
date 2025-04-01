@@ -2,7 +2,7 @@
 Core templating functions.
 
 This module defines process_text() which resolves template tags (delimited by {{ and }})
-using the provided context. Both "normal" and "table" modes are supported. In 
+using the provided context. Both "normal" and "table" modes are supported. In
 "normal" mode, all tags are replaced inline (with list results joined by a delimiter).
 In "table" mode, if the text contains exactly one tag, its resolved value is used
 to produce the final output (if a list then a list of outputs is returned).
@@ -32,7 +32,7 @@ def process_text(
 
     This implementation searches for all tags via re.finditer and rebuilds the text.
 
-    In "normal" mode, every tag is replaced inline—if a resolved tag is a list,
+    In "normal" mode, every tag is replaced inline: if a resolved tag is a list,
     its items are joined with the specified delimiter.
 
     In "table" mode, the text must contain exactly one tag. If the resolved value is a list,

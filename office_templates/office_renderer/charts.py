@@ -205,7 +205,7 @@ def chart_axes_are_swapped(chart: Chart):
     series = chart.series[0]
 
     # Look at the cell range reference ("<c:f>") - but NOT for categories
-    if not series._element:
+    if series._element is None:
         return False
     range_references = series._element.xpath("./c:tx//c:f/text()")
     if not range_references:
