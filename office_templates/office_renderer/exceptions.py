@@ -22,8 +22,8 @@ class TableError(Exception):
     pass
 
 
-class TableCellOverwriteError(Exception):
-    """Raised when a table cell is overwritten with a new value."""
+class CellOverwriteError(Exception):
+    """Raised when a table/spreadsheet cell would be overwritten with a new value."""
 
     pass
 

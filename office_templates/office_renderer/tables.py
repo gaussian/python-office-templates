@@ -4,7 +4,7 @@ from pptx.table import _Cell
 
 from template_reports.templating import process_text, get_matching_tags
 
-from .exceptions import TableCellOverwriteError, TableError
+from .exceptions import CellOverwriteError, TableError
 from .paragraphs import process_paragraph
 
 
@@ -91,7 +91,7 @@ def fill_column_with_list(cell, items):
             cell_element = r[cell_index]
             cell_text = cell_element.text if hasattr(cell_element, "text") else ""
             if cell_text.strip():
-                raise TableCellOverwriteError(
+                raise CellOverwriteError(
                     f"Cell in table would be overwritten: {cell_text}"
                 )
             set_cell_text(remaining_items.pop(0), cell_element, r)

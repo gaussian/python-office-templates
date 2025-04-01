@@ -8,7 +8,7 @@ def process_text_list(
     perm_user,
     as_float: bool,
     fail_if_not_float: bool = False,
-):
+) -> list:
     """
     Process a list of items, each of which may be a string with placeholders
     or a list of strings with placeholders. Return a list of processed items.
