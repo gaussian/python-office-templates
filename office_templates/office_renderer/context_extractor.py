@@ -1,5 +1,7 @@
 import re
 from pptx import Presentation
+
+from .charts import get_raw_chart_data
 from .paragraphs import merge_split_placeholders
 
 # Pattern to match placeholders, e.g. "{{ some.placeholder }}"
@@ -52,25 +54,34 @@ def extract_context_keys(template) -> dict[str, list[str]]:
 
     for slide in prs.slides:
         for shape in slide.shapes:
+            # Build a list of all texts on this slide.
+            texts = []
+
             # Process text frames.
             if hasattr(shape, "text_frame"):
                 for paragraph in shape.text_frame.paragraphs:
                     merge_split_placeholders(paragraph)
-                    keys = extract_top_level_context_keys_from_text(paragraph.text)
-                    simple_fields.update(keys["simple_fields"])
-                    object_fields.update(keys["object_fields"])
+                    texts.append(paragraph.text)
             # Process table cells.
-            if getattr(shape, "has_table", False) and shape.has_table:
+            if getattr(shape, "has_table", False):
                 for row in shape.table.rows:
                     for cell in row.cells:
                         if cell.text_frame:
                             for paragraph in cell.text_frame.paragraphs:
                                 merge_split_placeholders(paragraph)
-                                keys = extract_top_level_context_keys_from_text(
-                                    paragraph.text
-                                )
-                                simple_fields.update(keys["simple_fields"])
-                                object_fields.update(keys["object_fields"])
+                                texts.append(paragraph.text)
+            # Process chart spreadsheets.
+            if getattr(shape, "has_chart", False):
+                raw_data = get_raw_chart_data(shape.chart)
+                for col in raw_data:
+                    for item in col:
+                        texts.append(str(item))
+
+    # Process all texts to extract context keys.
+    for text in texts:
+        keys = extract_top_level_context_keys_from_text(text)
+        simple_fields.update(keys["simple_fields"])
+        object_fields.update(keys["object_fields"])
 
     return {
         "simple_fields": sorted(simple_fields),
