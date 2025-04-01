@@ -71,13 +71,17 @@ def process_chart(chart: Chart, context: dict, perm_user):
     chart.replace_data(chart_data)
 
 
-def process_series_data(chart, context, perm_user):
+def get_raw_chart_data(chart: Chart):
     """
-    Process the data in a chart, excluding the series names and categories.
-    This is because if we put text values into the series data, the pptx
+    Get the raw row/col data from a chart object.
+
+    The return value is a list of lists, where outer list is COLUMNS and
+    inner lists are ROWS.
+
+    (This is because if we put text values into the series data, the pptx
     library will not be able to retrieve it (because it will be left out of
     the XML) and so we need to go to the underlying Excel workbook to update
-    the data.
+    the data.)
     """
 
     try:
@@ -97,27 +101,40 @@ def process_series_data(chart, context, perm_user):
         raise TableError("Attached Excel workbook is empty or has no worksheets.")
     worksheet = workbook.worksheets[0]
 
+    # Retrieve the DATA from the workbook.
+    return [[cell.value for cell in col] for col in worksheet.iter_cols()]
+
+
+def process_series_data(chart: Chart, context, perm_user):
+    """
+    Process the data in a chart, excluding the series names and categories.
+
+    (This is because if we put text values into the series data, the pptx
+    library will not be able to retrieve it (because it will be left out of
+    the XML) and so we need to go to the underlying Excel workbook to update
+    the data.)
+    """
+
+    # Get the raw data from the chart's workbook.
+    # This is a list of lists, where the outer list is COLUMN and
+    # the inner lists are items in each ROW.
+    raw_data = get_raw_chart_data(chart)
+
     # Process the DATA in the workbook (excluding the the first row and column
     # which correspond to series/categories, which are handled more directly
     # instead of reading the Excel data).
-    all_series_data = []
-    for i, col in enumerate(worksheet.iter_cols()):
-        # Skip the first column, which is handled by the ChartData series/categories.
-        if i == 0:
-            continue
-        # Skip the first row, which is handled by the ChartData series/categories.
-        rows = [row.value for row in col][1:]
+    return [
         # Process placeholders in the list data.
-        all_series_data.append(
-            process_chart_list(
-                rows,
-                context,
-                perm_user,
-                as_float=True,
-            )
+        process_chart_list(
+            # Skip the first row, which is handled by the ChartData series/categories.
+            col[1:],
+            context,
+            perm_user,
+            as_float=True,
         )
-
-    return all_series_data
+        # Skip the first column, which is handled by the ChartData series/categories.
+        for col in raw_data[1:]
+    ]
 
 
 def process_chart_list(items: list, context: dict, perm_user, as_float: bool):
@@ -188,7 +205,7 @@ def chart_axes_are_swapped(chart: Chart):
     series = chart.series[0]
 
     # Look at the cell range reference ("<c:f>") - but NOT for categories
-    if not series._element:
+    if series._element is None:
         return False
     range_references = series._element.xpath("./c:tx//c:f/text()")
     if not range_references:
