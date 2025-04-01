@@ -1,3 +1,9 @@
+class UnsupportedFileType(Exception):
+    """Raised when the file type is not supported."""
+
+    pass
+
+
 class UnterminatedTagException(Exception):
     """Raised when a template tag starting with '{{' is not terminated by '}}' in the same paragraph."""
 
@@ -16,19 +22,13 @@ class TableError(Exception):
     pass
 
 
-class TableCellOverwriteError(Exception):
-    """Raised when a table cell is overwritten with a new value."""
+class CellOverwriteError(Exception):
+    """Raised when a table/spreadsheet cell would be overwritten with a new value."""
 
     pass
 
 
 class ChartError(Exception):
     """Raised when an error occurs while processing a chart."""
-
-    pass
-
-
-class BadChartDataResultError(Exception):
-    """Raised when a processed value is invalid (i.e. result is not a float)."""
 
     pass

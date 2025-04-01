@@ -5,7 +5,7 @@ from .paragraphs import process_paragraph
 from .tables import process_table_cell
 
 
-def render_pptx(template, context, output, perm_user):
+def render_pptx(template, context: dict, output, perm_user):
     """
     Render the PPTX template (a path string or a file-like object) using the provided context and save to output.
     'output' can be a path string or a file-like object. If it's a file-like object, it will be rewound after saving.
