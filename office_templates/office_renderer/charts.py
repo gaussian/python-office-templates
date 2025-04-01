@@ -9,6 +9,7 @@ from pptx.chart.data import ChartData
 from template_reports.templating.list import process_text_list
 
 from .exceptions import ChartError
+from .utils import get_load_workbook
 
 if TYPE_CHECKING:
     from pptx.chart.chart import Chart
@@ -84,10 +85,7 @@ def get_raw_chart_data(chart: Chart):
     the data.)
     """
 
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        raise ChartError("Chart found, but required package (openpyxl) is not installed.")
+    load_workbook = get_load_workbook()
 
     # Access the embedded Excel workbook via the chart's part.
     chart_part = chart.part

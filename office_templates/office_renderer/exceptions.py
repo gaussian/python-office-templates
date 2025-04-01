@@ -1,3 +1,9 @@
+class UnsupportedFileType(Exception):
+    """Raised when the file type is not supported."""
+
+    pass
+
+
 class UnterminatedTagException(Exception):
     """Raised when a template tag starting with '{{' is not terminated by '}}' in the same paragraph."""
 
