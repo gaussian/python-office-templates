@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 from pptx.chart.data import ChartData
 
-from template_reports.templating.core import get_matching_tags, process_text
+from template_reports.templating.list import process_text_list
 
-from .exceptions import BadChartDataResultError, ChartError, TableError
+from .exceptions import ChartError
 
 if TYPE_CHECKING:
     from pptx.chart.chart import Chart
@@ -39,7 +39,7 @@ def process_chart(chart: Chart, context: dict, perm_user):
 
     # (2) Process series names, and attach to the series data from before.
     raw_series_names = [series.name for series in chart.series]
-    series_names = process_chart_list(raw_series_names, **process_kwargs, as_float=False)
+    series_names = process_text_list(raw_series_names, **process_kwargs, as_float=False)
     series_names_values = [
         (series_name, series_data)
         for series_name, series_data in zip_longest(
@@ -54,7 +54,7 @@ def process_chart(chart: Chart, context: dict, perm_user):
         raise ChartError("Chart must have exactly one plot.")
     plot = chart.plots[0]
     raw_categories = [str(cat) for cat in plot.categories]
-    categories = process_chart_list(raw_categories, **process_kwargs, as_float=False)
+    categories = process_text_list(raw_categories, **process_kwargs, as_float=False)
     # Need at least one category, otherwise the chart will not display.
     if not categories:
         raise ChartError(
@@ -98,7 +98,7 @@ def get_raw_chart_data(chart: Chart):
     wb_stream = BytesIO(xlsx_part.blob)
     workbook = load_workbook(wb_stream)
     if workbook is None or not workbook.worksheets:
-        raise TableError("Attached Excel workbook is empty or has no worksheets.")
+        raise ChartError("Attached Excel workbook is empty or has no worksheets.")
     worksheet = workbook.worksheets[0]
 
     # Retrieve the DATA from the workbook.
@@ -125,7 +125,7 @@ def process_series_data(chart: Chart, context, perm_user):
     # instead of reading the Excel data).
     return [
         # Process placeholders in the list data.
-        process_chart_list(
+        process_text_list(
             # Skip the first row, which is handled by the ChartData series/categories.
             col[1:],
             context,
@@ -135,62 +135,6 @@ def process_series_data(chart: Chart, context, perm_user):
         # Skip the first column, which is handled by the ChartData series/categories.
         for col in raw_data[1:]
     ]
-
-
-def process_chart_list(items: list, context: dict, perm_user, as_float: bool):
-    """
-    Process a list of items, each of which may be a string with placeholders
-    or a list of strings with placeholders. Return a list of processed items.
-    """
-
-    def _process_text(t, m):
-        r = process_text(
-            text=str(t),
-            mode=m,
-            context=context,
-            perm_user=perm_user,
-        )
-
-        if as_float:
-            if not isinstance(r, list):
-                return make_float(r)
-            return [make_float(ri) for ri in r]
-        return r
-
-    items = list(items)
-    results = None
-
-    # If there is only 1 item, use "table" mode, and if the return value
-    # is a LIST, then use that list as the results.
-    if len(items) == 1:
-        only_item = items[0]
-        if isinstance(only_item, str):
-            placeholder_matches = get_matching_tags(only_item)
-
-            # Table mode only supports exactly one placeholder, obviously,
-            # otherwise we would not know how to expand the table.
-            if len(placeholder_matches) == 1:
-                result = _process_text(only_item, "table")
-                if isinstance(result, list):
-                    results = result
-                else:
-                    results = [result]
-
-    # Otherwise, process each category individually.
-    if results is None:
-        results = [
-            (_process_text(item, "normal") if isinstance(item, str) else item)
-            for item in items
-        ]
-
-    return results
-
-
-def make_float(value):
-    try:
-        return float(value)
-    except ValueError:
-        raise BadChartDataResultError(f"Could not convert {value} to float.")
 
 
 def chart_axes_are_swapped(chart: Chart):
