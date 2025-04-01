@@ -2,7 +2,13 @@ from .core import get_matching_tags, process_text
 from .exceptions import BadFloatDataResultError
 
 
-def process_text_list(items: list, context: dict, perm_user, as_float: bool):
+def process_text_list(
+    items: list,
+    context: dict,
+    perm_user,
+    as_float: bool,
+    fail_if_not_float: bool = False,
+):
     """
     Process a list of items, each of which may be a string with placeholders
     or a list of strings with placeholders. Return a list of processed items.
@@ -18,8 +24,8 @@ def process_text_list(items: list, context: dict, perm_user, as_float: bool):
 
         if as_float:
             if not isinstance(r, list):
-                return make_float(r)
-            return [make_float(ri) for ri in r]
+                return make_float(r, fail_if_not_float)
+            return [make_float(ri, fail_if_not_float) for ri in r]
         return r
 
     items = list(items)
@@ -51,8 +57,10 @@ def process_text_list(items: list, context: dict, perm_user, as_float: bool):
     return results
 
 
-def make_float(value):
+def make_float(value: str | float, throw_if_fail: bool):
     try:
         return float(value)
     except ValueError:
+        if not throw_if_fail:
+            return value
         raise BadFloatDataResultError(f"Could not convert {value} to float.")

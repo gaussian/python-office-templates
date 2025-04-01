@@ -131,6 +131,7 @@ def process_series_data(chart: Chart, context, perm_user):
             context,
             perm_user,
             as_float=True,
+            fail_if_not_float=True,
         )
         # Skip the first column, which is handled by the ChartData series/categories.
         for col in raw_data[1:]
