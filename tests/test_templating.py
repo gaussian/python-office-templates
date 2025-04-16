@@ -104,6 +104,33 @@ class TestTemplatingNormalMode(unittest.TestCase):
         expected = ", ".join(u.email for u in self.program["users"])
         self.assertEqual(result, expected)
 
+    def test_datetime_formatting(self):
+        """Test that datetime formatting works correctly with the date filter."""
+        # Add a datetime to the context
+        self.context["meeting_time"] = datetime.datetime(2025, 2, 18, 12, 0, 0)
+        tpl = "{{ meeting_time | MMMM dd, YYYY }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        expected = self.context["meeting_time"].strftime("%B %d, %Y")
+        self.assertEqual(result, expected)
+
+        # Test with now to ensure it works the same
+        tpl2 = "{{ now | MMMM dd, YYYY }}"
+        with patch("template_reports.templating.resolve.datetime.datetime") as mock_dt:
+            mock_dt.now.return_value = self.now
+            result2 = process_text(
+                tpl2,
+                self.context,
+                perm_user=None,
+                mode="normal",
+            )
+        expected2 = self.now.strftime("%B %d, %Y")
+        self.assertEqual(result2, expected2)
+
     def test_mixed_text_normal(self):
         # Mixed text with a placeholder that resolves to a list should join the list.
         tpl = "All emails: {{ program.users.email }} are active."
@@ -271,6 +298,50 @@ class TestTemplatingNormalMode(unittest.TestCase):
             mode="normal",
         )
         self.assertEqual(result, "Price: 19.95")
+
+    def test_math_operator_multiplication(self):
+        self.context["value"] = 7
+        tpl = "{{ value * 2 }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "14.0")
+
+    def test_math_operator_subtraction(self):
+        self.context["value"] = 10
+        tpl = "{{ value - 4 }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "6.0")
+
+    def test_numerical_formatting(self):
+        self.context["value"] = 3.14159
+        tpl = "{{ value | .2f }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "3.14")
+
+    def test_math_and_formatting_combined(self):
+        self.context["value"] = 2.71828
+        tpl = "{{ value * 3 | .2f }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "8.15")
 
 
 # ----- Test Case for Table Mode -----

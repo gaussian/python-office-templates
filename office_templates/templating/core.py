@@ -66,8 +66,8 @@ def process_text(
 
         # Process the actual tag expression.
         value = resolve_formatted_tag(
-            raw_expr,
-            context,
+            expr=raw_expr,
+            context=context,
             perm_user=perm_user,
         )
 

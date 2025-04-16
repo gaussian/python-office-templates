@@ -30,22 +30,27 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
 
       6. Certain keywords, such as "now" to return the current datetime.
 
-      7. Use of a pipe operator (|) to specify a format string for date or datetime values.
+      7. Use of mathematical operators (+, -, *, /) to perform arithmetic operations on the resolved value.
          For example:
-             {{ now | "%Y-%m-%d" }}
-         will return the current date formatted as specified.
+             {{ user.age + 5 }}          will return the user's age plus 5.
 
-      8. [CURRENTLY DISABLED] Use of a pipe operator to retrieve more than one attribute from an object/dictionary
+      8. Use of a pipe operator (|) to specify a format string eg for date or datetime or numerical values.
+         For example:
+             {{ now | %Y-%m-%d }}         will return the current date formatted as specified.
+             {{ now | MMMM, dd, YYYY }}   will return the current date formatted as specified.
+             {{ value | .2f }}            will return the value formatted to two decimal places.
+
+      9. [CURRENTLY DISABLED] Use of a pipe operator to retrieve more than one attribute from an object/dictionary
          and return a tuple of values. For example:
              {{ user | email, name }}
              {{ team.users | email, phone }}
 
-      9. "Nested tags" or "tag within a tag" where a portion of the tag expression is enclosed
-         within dollar signs ($). These inner sub-tags are resolved first and their result replaces the sub-tag.
-         For example:
-             {{ user.custom_function($value$) }}
-         If value resolves to 45, the expression will first convert to:
-             {{ user.custom_function(45) }}
+      10. "Nested tags" or "tag within a tag" where a portion of the tag expression is enclosed
+          within dollar signs ($). These inner sub-tags are resolved first and their result replaces the sub-tag.
+          For example:
+              {{ user.custom_function($value$) }}
+          If value resolves to 45, the expression will first convert to:
+              {{ user.custom_function(45) }}
 
     Parameters:
       expr (str): The complete tag expression (without the double curly braces) to be resolved.
@@ -67,30 +72,72 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
         )
 
     # Split by the pipe operator to separate the tag expression from an optional format string.
-    parts = expr.split("|")
-    if len(parts) > 2:
+    format_parts = expr.split("|")
+    if len(format_parts) > 2:
         raise BadTagException(f"Bad format in tag '{expr}': too many pipe operators.")
-    value_expr = parts[0].strip()
+    value_expr = format_parts[0].strip()
 
     format_expr = None
-    if len(parts) == 2:
-        format_expr = parts[1].strip()
+    if len(format_parts) == 2:
+        format_expr = format_parts[1].strip()
         if (format_expr.startswith('"') and format_expr.endswith('"')) or (
             format_expr.startswith("'") and format_expr.endswith("'")
         ):
             format_expr = format_expr[1:-1]
 
+    # Split by mathematical operators for (add, subtract, multiply, divide)
+    math_operator = None
+    math_operand = None
+    for operator in ["+", "-", "*", "/"]:
+        if operator in value_expr:
+            math_parts = value_expr.split(operator)
+            if len(math_parts) > 2:
+                raise BadTagException(
+                    f"Bad format in tag '{value_expr}': too many operators."
+                )
+            value_expr = math_parts[0].strip()
+            math_operator = operator
+            try:
+                math_operand = float(math_parts[1].strip())
+            except ValueError:
+                raise BadTagException(
+                    f"Invalid operand for operator '{math_operator}': {math_parts[1].strip()}"
+                )
+            if operator == "/" and math_operand == 0:
+                raise BadTagException("Division by zero error.")
+            break
+
     # Resolve the tag expression (without the formatting part).
     value = resolve_tag(value_expr, context, perm_user=perm_user)
 
+    # Perform mathematical operations if applicable.
+    if math_operator and math_operand is not None:
+        try:
+            value = float(value)
+        except ValueError:
+            raise BadTagException(
+                f"Invalid value for mathematical operation '{value_expr}': '{value}'"
+            )
+        if math_operator == "+":
+            value += math_operand
+        elif math_operator == "-":
+            value -= math_operand
+        elif math_operator == "*":
+            value *= math_operand
+        elif math_operator == "/":
+            value /= math_operand
+
     # If a format string is provided...
     if format_expr:
-        # If the value supports strftime, format it.
-        if hasattr(value, "strftime"):
-            try:
-                return value.strftime(convert_date_format(format_expr))
-            except Exception as e:
-                raise BadTagException(f"Bad format in tag '{expr}': {e}.")
+        try:
+            # Convert the format string to a date format if necessary.
+            format_expr = convert_date_format(format_expr)
+            value = format(value, format_expr)
+        except Exception as e:
+            raise BadTagException(
+                f"Error formatting value '{value}' with format '{format_expr}': {str(e)}"
+            )
+
         # If the format string contains a comma, split it to retrieve multiple attributes.
         # elif "," in format_expr:
         #     attrs = [a.strip() for a in format_expr.split(",")]
@@ -99,8 +146,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
         #         for attr in attrs
         #     )
 
-    else:
-        return value
+    return value
 
 
 def substitute_inner_tags(expr: str, context, perm_user=None) -> str:
