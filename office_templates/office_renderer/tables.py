@@ -23,10 +23,11 @@ def process_table_cell(cell, context: dict, perm_user=None):
     # Process in "table" mode if exactly one tag is found.
     if len(matches) == 1:
         result = process_text(
-            cell_text,
-            context,
+            text=cell_text,
+            context=context,
             perm_user=perm_user,
             mode="table",
+            fail_if_empty=False,
         )
         if isinstance(result, list):
             fill_column_with_list(cell, result)
@@ -37,9 +38,9 @@ def process_table_cell(cell, context: dict, perm_user=None):
     else:
         for paragraph in cell.text_frame.paragraphs:
             process_paragraph(
-                paragraph,
-                context,
-                perm_user,
+                paragraph=paragraph,
+                context=context,
+                perm_user=perm_user,
                 mode="normal",
             )
 

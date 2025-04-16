@@ -30,6 +30,7 @@ def process_chart(chart: Chart, context: dict, perm_user):
     process_kwargs = dict(
         context=context,
         perm_user=perm_user,
+        fail_if_empty=True,
     )
 
     # (1) Process series DATA in the chart (excluding series names and categories).
@@ -130,6 +131,7 @@ def process_series_data(chart: Chart, context, perm_user):
             perm_user,
             as_float=True,
             fail_if_not_float=True,
+            fail_if_empty=False,
         )
         # Skip the first column, which is handled by the ChartData series/categories.
         for col in raw_data[1:]

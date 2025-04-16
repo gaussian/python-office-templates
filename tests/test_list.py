@@ -33,6 +33,8 @@ class TestProcessTextList(unittest.TestCase):
                 "1": "2.5",
                 "2": "not_a_number",
             },
+            "none_value": None,
+            "blank_value": "",
         }
         self.request_user = DummyRequestUser()
 
@@ -83,6 +85,48 @@ class TestProcessTextList(unittest.TestCase):
                 as_float=True,
                 fail_if_not_float=True,
             )
+
+    def test_as_float_with_none_value(self):
+        """Test that an empty placeholder with as_float=True results in None or ''."""
+        items = ["{{ none_value }}"]
+        # Value is None, should resolve to empty string
+        result = process_text_list(
+            items=items,
+            context=self.context,
+            perm_user=None,
+            as_float=True,
+            fail_if_not_float=False,
+        )
+        self.assertEqual(result[0], "")
+        result = process_text_list(
+            items=items,
+            context=self.context,
+            perm_user=None,
+            as_float=True,
+            fail_if_not_float=True,
+        )
+        self.assertEqual(result[0], 0.0)
+
+    def test_as_float_with_empty_value(self):
+        """Test that an empty placeholder with as_float=True results in None or ''."""
+        items = ["{{ blank_value }}"]
+        # Value is None, should resolve to empty string
+        result = process_text_list(
+            items=items,
+            context=self.context,
+            perm_user=None,
+            as_float=True,
+            fail_if_not_float=False,
+        )
+        self.assertEqual(result[0], "")
+        result = process_text_list(
+            items=items,
+            context=self.context,
+            perm_user=None,
+            as_float=True,
+            fail_if_not_float=True,
+        )
+        self.assertEqual(result[0], 0.0)
 
     def test_make_float_function(self):
         """Test the make_float utility function."""

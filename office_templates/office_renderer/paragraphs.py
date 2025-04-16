@@ -38,10 +38,11 @@ def process_paragraph(paragraph, context, perm_user, mode="normal"):
     for run in paragraph.runs:
         current_text = run.text
         processed = process_text(
-            current_text,
-            context,
+            text=current_text,
+            context=context,
             perm_user=perm_user,
             mode=mode,
+            fail_if_empty=True,
         )
         if isinstance(processed, str):
             run.text = processed

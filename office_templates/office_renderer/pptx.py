@@ -34,7 +34,7 @@ def render_pptx(template, context: dict, output, perm_user):
                     # Merge any placeholders that are split across multiple runs.
                     try:
                         process_paragraph(
-                            paragraph,
+                            paragraph=paragraph,
                             context=slide_context,
                             perm_user=perm_user,
                             mode="normal",  # for text frames

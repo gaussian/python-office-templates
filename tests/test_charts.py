@@ -7,6 +7,7 @@ from pptx.util import Inches
 import sys
 
 from template_reports.office_renderer.charts import process_chart
+from template_reports.templating.exceptions import EmptyDataException
 
 
 class DummyPlot:
@@ -201,7 +202,7 @@ class TestProcessChartFull(unittest.TestCase):
                     "rating": 3.8,
                     "impact": 20,
                 },
-            ]
+            ],
         }
 
         # Process the chart. This should update its data by expanding the list placeholders.
@@ -215,6 +216,58 @@ class TestProcessChartFull(unittest.TestCase):
         self.assertEqual(len(chart.series), 2)
         self.assertEqual(list(chart.series[0].values), [4.5, 3.8])
         self.assertEqual(list(chart.series[1].values), [10, 20])
+
+    def test_chart_with_empty_category_should_fail(self):
+        """Test that a chart placeholder resolving to an empty value results in None or '' in the chart data (should fail currently)."""
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        chart_data = ChartData()
+        chart_data.categories = ["{{ none_value }}"]
+        chart_data.add_series("Series 1", ("{{ none_value }}", 2.0))
+        chart_shape = slide.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            Inches(1),
+            Inches(1),
+            Inches(4),
+            Inches(3),
+            chart_data,
+        )
+        chart = chart_shape.chart
+        context = {
+            "none_value": None,
+        }
+        with self.assertRaises(EmptyDataException):
+            process_chart(chart, context, perm_user=None)
+
+    def test_chart_with_empty_placeholder_value(self):
+        """Test that a chart placeholder resolving to an empty value results in None or '' in the chart data (should fail currently)."""
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        chart_data = ChartData()
+        chart_data.categories = ["Category"]
+        chart_data.add_series("Series 1", ("{{ none_value }}", 2.0))
+        chart_data.add_series("Series 2", ("{{ empty_value }}", 3.0))
+        chart_shape = slide.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED,
+            Inches(1),
+            Inches(1),
+            Inches(4),
+            Inches(3),
+            chart_data,
+        )
+        chart = chart_shape.chart
+        context = {
+            "none_value": None,
+            "empty_value": "",
+        }
+        process_chart(chart, context, perm_user=None)
+        # Check series values
+        values_1 = list(chart.series[0].values)
+        self.assertEqual(values_1[0], 0.0)
+        self.assertEqual(values_1[1], 2.0)
+        values_2 = list(chart.series[1].values)
+        self.assertEqual(values_2[0], 0.0)
+        self.assertEqual(values_2[1], 3.0)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ def process_text_list(
     perm_user,
     as_float: bool,
     fail_if_not_float: bool = False,
+    fail_if_empty: bool = False,
 ) -> list:
     """
     Process a list of items, each of which may be a string with placeholders
@@ -20,12 +21,18 @@ def process_text_list(
             mode=m,
             context=context,
             perm_user=perm_user,
+            fail_if_empty=fail_if_empty,
         )
 
+        # Check if result is empty and we are not allowed to return empty values
+
         if as_float:
-            if not isinstance(r, list):
-                return make_float(r, fail_if_not_float)
-            return [make_float(ri, fail_if_not_float) for ri in r]
+            try:
+                if not isinstance(r, list):
+                    return make_float(r, fail_if_not_float)
+                return [make_float(ri, fail_if_not_float) for ri in r]
+            except BadFloatDataResultError as e:
+                raise BadFloatDataResultError(f"Could not convert `{t}` to float => {e}")
         return r
 
     items = list(items)
@@ -58,9 +65,14 @@ def process_text_list(
 
 
 def make_float(value: str | float, throw_if_fail: bool):
+    if value is None or value == "":
+        if throw_if_fail:
+            return 0.0
+        return ""
+
     try:
         return float(value)
     except ValueError:
         if not throw_if_fail:
             return value
-        raise BadFloatDataResultError(f"Could not convert {value} to float.")
+        raise BadFloatDataResultError(f"Could not convert `{value}` to float.")

@@ -236,7 +236,7 @@ class TestTables(unittest.TestCase):
         # Now, cell_wrapper._tc.getparent() returns row and row.getparent() returns dummy_table.
 
         # Define a dummy process_text that returns a list.
-        def dummy_process_text(text, context, perm_user, mode):
+        def dummy_process_text(text, context, perm_user, mode, fail_if_empty):
             if mode == "table":
                 return ["Row1", "Row2"]
             return "Row1"
