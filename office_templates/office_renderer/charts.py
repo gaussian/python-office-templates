@@ -64,7 +64,7 @@ def process_chart(chart: Chart, context: dict, perm_user):
 
     # (4) Create a new ChartData object and populate it.
     chart_data = ChartData()
-    chart_data.categories = categories
+    chart_data.categories = [c or "[Empty]" for c in categories]
     for name, values in series_names_values:
         chart_data.add_series(name, values)
 

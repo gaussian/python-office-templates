@@ -23,9 +23,12 @@ def process_text_list(
         )
 
         if as_float:
-            if not isinstance(r, list):
-                return make_float(r, fail_if_not_float)
-            return [make_float(ri, fail_if_not_float) for ri in r]
+            try:
+                if not isinstance(r, list):
+                    return make_float(r, fail_if_not_float)
+                return [make_float(ri, fail_if_not_float) for ri in r]
+            except BadFloatDataResultError as e:
+                raise BadFloatDataResultError(f"Could not convert `{t}` to float => {e}")
         return r
 
     items = list(items)
@@ -58,9 +61,14 @@ def process_text_list(
 
 
 def make_float(value: str | float, throw_if_fail: bool):
+    if value is None or value == "":
+        if throw_if_fail:
+            return 0.0
+        return ""
+
     try:
         return float(value)
     except ValueError:
         if not throw_if_fail:
             return value
-        raise BadFloatDataResultError(f"Could not convert {value} to float.")
+        raise BadFloatDataResultError(f"Could not convert `{value}` to float.")
