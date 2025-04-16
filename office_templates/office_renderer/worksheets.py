@@ -13,6 +13,7 @@ def process_worksheet(worksheet, context: dict, perm_user=None):
         "perm_user": perm_user,
         "as_float": True,
         "fail_if_not_float": False,
+        "fail_if_empty": False,
     }
 
     # Process column by column, THEN each element (row) of the column.

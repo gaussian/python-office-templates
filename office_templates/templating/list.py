@@ -8,6 +8,7 @@ def process_text_list(
     perm_user,
     as_float: bool,
     fail_if_not_float: bool = False,
+    fail_if_empty: bool = False,
 ) -> list:
     """
     Process a list of items, each of which may be a string with placeholders
@@ -20,7 +21,10 @@ def process_text_list(
             mode=m,
             context=context,
             perm_user=perm_user,
+            fail_if_empty=fail_if_empty,
         )
+
+        # Check if result is empty and we are not allowed to return empty values
 
         if as_float:
             try:

@@ -11,7 +11,7 @@ Permission checking is enforced during parsing.
 
 import re
 
-from .exceptions import BadTemplateModeError
+from .exceptions import BadTemplateModeError, EmptyDataException
 from .resolve import resolve_formatted_tag
 
 
@@ -24,8 +24,9 @@ def process_text(
     text: str,
     context: dict,
     perm_user=None,
-    mode="normal",
-    delimiter=", ",
+    mode: str = "normal",
+    delimiter: str = ", ",
+    fail_if_empty: bool = False,
 ):
     """
     Process text containing template tags.
@@ -69,6 +70,12 @@ def process_text(
             context,
             perm_user=perm_user,
         )
+
+        # If the value is empty and fail_if_empty is set, raise an error.
+        if fail_if_empty and value in ("", None):
+            raise EmptyDataException(
+                f"Processed value for '{raw_expr}' is empty, but it is required - check context."
+            )
 
         if isinstance(value, list):
             # Special case: table mode with a list value. Only one placeholder

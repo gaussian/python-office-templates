@@ -10,6 +10,12 @@ class MissingDataException(Exception):
     pass
 
 
+class EmptyDataException(Exception):
+    """Raised when a processed value is required but results in None/empty string."""
+
+    pass
+
+
 class BadFloatDataResultError(Exception):
     """Raised when a processed value is invalid (i.e. result is not a float)."""
 
