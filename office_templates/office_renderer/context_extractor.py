@@ -52,10 +52,10 @@ def extract_context_keys(template) -> dict[str, list[str]]:
     simple_fields = set()
     object_fields = set()
 
+    # Build a list of all texts on all slides.
+    texts = []
     for slide in prs.slides:
         for shape in slide.shapes:
-            # Build a list of all texts on this slide.
-            texts = []
 
             # Process text frames.
             if hasattr(shape, "text_frame"):
