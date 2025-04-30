@@ -240,6 +240,36 @@ class TestXlsxIntegration(unittest.TestCase):
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
 
+    def test_callable_math_expression_integration(self):
+        """Test that math operations on callable results are evaluated in XLSX rendering."""
+
+        class DummyCallable:
+            def multiply(self, a, b):
+                return a * b
+
+            def add(self, a, b):
+                return a + b
+
+        # Add a new worksheet for this test
+        ws = self.wb.create_sheet(title="CallableMath")
+        ws["A1"] = "{{ dummy.multiply(3,4) * 10 }}"
+        ws["A2"] = "{{ dummy.multiply(3,4) + 5 }}"
+        ws["A3"] = "{{ dummy.add(10,5) * 2 }}"
+
+        # Add dummy callable to context
+        self.context["dummy"] = DummyCallable()
+        self.wb.save(self.temp_input)
+
+        rendered, errors = render_xlsx(
+            self.temp_input, self.context, self.temp_output, perm_user=None
+        )
+        self.assertIsNone(errors)
+        output_wb = load_workbook(rendered)
+        ws_callable = output_wb["CallableMath"]
+        self.assertEqual(ws_callable["A1"].value, 120.0)  # 3*4=12, 12*10=120
+        self.assertEqual(ws_callable["A2"].value, 17.0)  # 3*4=12, 12+5=17
+        self.assertEqual(ws_callable["A3"].value, 30.0)  # 10+5=15, 15*2=30
+
 
 if __name__ == "__main__":
     unittest.main()

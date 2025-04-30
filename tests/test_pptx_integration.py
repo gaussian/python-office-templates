@@ -176,6 +176,39 @@ class TestRendererIntegration(unittest.TestCase):
         os.remove(temp_input)
         os.remove(temp_output)
 
+    def test_callable_math_expression_integration(self):
+        """Test that math operations on callable results are evaluated in PPTX rendering."""
+
+        class DummyCallable:
+            def multiply(self, a, b):
+                return a * b
+
+            def add(self, a, b):
+                return a + b
+
+        # Add a new slide with a text box containing callable math expressions
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[5])
+        textbox = slide.shapes.add_textbox(Inches(0.5), Inches(4), Inches(4), Inches(1))
+        textbox.text_frame.text = (
+            "Result1: {{ dummy.multiply(3,4) * 10 }}\n"
+            "Result2: {{ dummy.multiply(3,4) + 5 }}\n"
+            "Result3: {{ dummy.add(10,5) * 2 }}"
+        )
+        self.prs.save(self.temp_input)
+        # Add dummy callable to context
+        self.context["dummy"] = DummyCallable()
+        rendered, errors = render_pptx(
+            self.temp_input, self.context, self.temp_output, perm_user=None
+        )
+        self.assertIsNone(errors)
+        prs_out = Presentation(rendered)
+        # The new slide is the last one
+        out_textbox = prs_out.slides[-1].shapes[-1]
+        txt = out_textbox.text_frame.text
+        self.assertIn("Result1: 120.0", txt)  # 3*4=12, 12*10=120
+        self.assertIn("Result2: 17.0", txt)  # 3*4=12, 12+5=17
+        self.assertIn("Result3: 30.0", txt)  # 10+5=15, 15*2=30
+
 
 if __name__ == "__main__":
     unittest.main()
