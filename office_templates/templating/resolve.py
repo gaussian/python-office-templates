@@ -87,17 +87,27 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
         ):
             format_expr = format_expr[1:-1]
 
+    # Preparing for mathematical operators:
+    # Split at the last closing parenthesis if present, keeping both parts
+    if ")" in value_expr:
+        pre_part, _, value_expr_post_brackets = value_expr.rpartition(")")
+        pre_part += ")"
+        value_expr_post_brackets = value_expr_post_brackets.strip()
+    else:
+        pre_part = ""
+        value_expr_post_brackets = value_expr
+
     # Split by mathematical operators for (add, subtract, multiply, divide)
     math_operator = None
     math_operand = None
     for operator in ["+", "-", "*", "/"]:
-        if operator in value_expr:
-            math_parts = value_expr.split(operator)
+        if operator in value_expr_post_brackets:
+            math_parts = value_expr_post_brackets.split(operator)
             if len(math_parts) > 2:
                 raise BadTagException(
-                    f"Bad format in tag '{value_expr}': too many operators."
+                    f"Bad format in tag '{value_expr}': too many `{operator}` operators."
                 )
-            value_expr = math_parts[0].strip()
+            value_expr = pre_part + math_parts[0].strip()
             math_operator = operator
             try:
                 math_operand = float(math_parts[1].strip())
@@ -115,7 +125,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
     # Perform mathematical operations if applicable.
     if math_operator and math_operand is not None:
         try:
-            value = float(value)
+            value = float(value if value else 0)
         except ValueError:
             raise BadTagException(
                 f"Invalid value for mathematical operation '{value_expr}': '{value}'"
