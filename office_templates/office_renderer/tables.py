@@ -58,11 +58,10 @@ def fill_column_with_list(cell, items):
     If the cell's underlying XML does not have a parent (row or table not found), simply update the cell.
     """
     if not items:
-        cell.text = ""
+        set_cell_text("", cell._tc, cell._tc.getparent())
         return
-
-    # Set first item in original cell.
-    cell.text = str(items[0])
+    # Set first item in original cell, preserving formatting
+    set_cell_text(items[0], cell._tc, cell._tc.getparent())
 
     # Attempt to get the row element (<a:tr>) from the cell's XML.
     row_element = cell._tc.getparent()
@@ -135,11 +134,9 @@ def clone_row_with_value(original_row, cell_index, new_text):
         # Update the cell at the given index with the new text.
         if "{{" in cell_element.text:
             set_cell_text("", cell_element, new_row)
-            # cell.text = ""
 
         # Clear cells that contain a template placeholder.
         elif i == cell_index:
-            # cell.text = str(new_text)
             set_cell_text(str(new_text), cell_element, new_row)
 
     return new_row
@@ -147,12 +144,30 @@ def clone_row_with_value(original_row, cell_index, new_text):
 
 def set_cell_text(text: str, cell_element, parent_row):
     """
-    Set the text of a cell in a table.
+    Set the text of a cell in a table. Preserve formatting.
 
-    If the cell is not found in the parent, raise a TableError.
+    Overwrite *only* the first run of the first paragraph in this cell,
+    preserving all of its existing formatting. Delete any extra runs.
     """
     # Add wrapper so we can set the cell text
     cell = _Cell(cell_element, parent=parent_row)
+    tf = cell.text_frame
 
-    # Update the cell text
-    cell.text = text
+    # 1) Ensure there’s at least one paragraph
+    if not tf.paragraphs:
+        p = tf.add_paragraph()
+    else:
+        p = tf.paragraphs[0]
+
+    # 2) Ensure there’s at least one run
+    if not p.runs:
+        run = p.add_run()
+    else:
+        run = p.runs[0]
+
+    # 3) Set the text of that first run (formatting stays intact)
+    run.text = text
+
+    # 4) Clear any extra runs so old text doesn’t linger
+    for extra in p.runs[1:]:
+        extra.text = ""
