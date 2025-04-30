@@ -343,6 +343,50 @@ class TestTemplatingNormalMode(unittest.TestCase):
         )
         self.assertEqual(result, "8.15")
 
+    def test_string_upper_formatting(self):
+        self.context["value"] = "hello world"
+        tpl = "{{ value | upper }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "HELLO WORLD")
+
+    def test_string_lower_formatting(self):
+        self.context["value"] = "Hello World"
+        tpl = "{{ value | lower }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "hello world")
+
+    def test_string_capitalize_formatting(self):
+        self.context["value"] = "hello world"
+        tpl = "{{ value | capitalize }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "HELLO WORLD")
+
+    def test_string_title_formatting(self):
+        self.context["value"] = "hello world"
+        tpl = "{{ value | title }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "Hello World")
+
 
 # ----- Test Case for Table Mode -----
 class TestTemplatingTableMode(unittest.TestCase):

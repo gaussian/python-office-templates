@@ -5,6 +5,7 @@ import datetime
 
 from pptx import Presentation
 from pptx.util import Inches
+from pptx.dml.color import RGBColor
 
 from template_reports.office_renderer import render_pptx
 
@@ -120,6 +121,60 @@ class TestRendererIntegration(unittest.TestCase):
             cell_text = row.cells[0].text.strip()
             expected = f"Here: {expected_users[i]}"
             self.assertEqual(cell_text, expected)
+
+    def test_table_cell_formatting_preserved_on_row_expansion(self):
+        # Create a PPTX with a table cell with formatting
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        table_shape = slide.shapes.add_table(
+            1, 1, Inches(0.5), Inches(2), Inches(4), Inches(0.8)
+        )
+        cell = table_shape.table.cell(0, 0)
+        cell.text = "Here: {{ program.users.email }}"
+        # Set formatting: bold, font size, color
+        para = cell.text_frame.paragraphs[0]
+        run = para.runs[0]
+        run.font.bold = True
+        run.font.size = 240000  # 24 pt
+        run.font.color.rgb = RGBColor(255, 0, 0)  # Red
+        # Save template
+        temp_input = tempfile.mktemp(suffix=".pptx")
+        temp_output = tempfile.mktemp(suffix=".pptx")
+        prs.save(temp_input)
+        # Context with multiple users
+        program = {
+            "name": "Test Program",
+            "users": [
+                DummyUser("Alice", "alice@example.com"),
+                DummyUser("Bob", "bob@example.com"),
+            ],
+        }
+        context = {"user": program["users"][0], "program": program}
+        # Render
+        rendered, errors = render_pptx(temp_input, context, temp_output, perm_user=None)
+        self.assertIsNone(errors)
+        prs_out = Presentation(rendered)
+        table_shape_out = None
+        for shape in prs_out.slides[0].shapes:
+            if getattr(shape, "has_table", False) and shape.has_table:
+                table_shape_out = shape
+                break
+        self.assertIsNotNone(table_shape_out)
+        rows = list(table_shape_out.table.rows)
+        self.assertEqual(len(rows), 2)
+        # Check formatting in each row
+        for row in rows:
+            cell = row.cells[0]
+            para = cell.text_frame.paragraphs[0]
+            run = para.runs[0]
+            self.assertTrue(run.font.bold)
+            # Font sizes may have small variations in rendering, allow for small difference
+            self.assertAlmostEqual(run.font.size, 240000, delta=1000)
+            # Color may be RGBColor, so compare as tuple
+            rgb = tuple(run.font.color.rgb) if run.font.color.rgb else None
+            self.assertEqual(rgb, (255, 0, 0))
+        os.remove(temp_input)
+        os.remove(temp_output)
 
 
 if __name__ == "__main__":

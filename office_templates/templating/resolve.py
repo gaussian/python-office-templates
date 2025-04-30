@@ -2,7 +2,7 @@ import re
 import datetime
 
 from .exceptions import BadTagException, MissingDataException, TagCallableException
-from .formatting import convert_date_format
+from .formatting import convert_date_format, format_value
 from .parse import get_nested_attr, evaluate_condition, parse_callable_args
 from .permissions import enforce_permissions
 
@@ -39,6 +39,8 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
              {{ now | %Y-%m-%d }}         will return the current date formatted as specified.
              {{ now | MMMM, dd, YYYY }}   will return the current date formatted as specified.
              {{ value | .2f }}            will return the value formatted to two decimal places.
+             {{ value | upper }}          will return the value in upper case.
+             {{ value | lower }}          will return the value in lower case.
 
       9. [CURRENTLY DISABLED] Use of a pipe operator to retrieve more than one attribute from an object/dictionary
          and return a tuple of values. For example:
@@ -129,22 +131,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
 
     # If a format string is provided...
     if format_expr:
-        try:
-            # Convert the format string to a date format if necessary.
-            format_expr = convert_date_format(format_expr)
-            value = format(value, format_expr)
-        except Exception as e:
-            raise BadTagException(
-                f"Error formatting value '{value}' with format '{format_expr}': {str(e)}"
-            )
-
-        # If the format string contains a comma, split it to retrieve multiple attributes.
-        # elif "," in format_expr:
-        #     attrs = [a.strip() for a in format_expr.split(",")]
-        #     return tuple(
-        #         resolve_tag(f"{value_expr}.{attr}", context, perm_user=perm_user)
-        #         for attr in attrs
-        #     )
+        value = format_value(value, format_expr)
 
     return value
 
