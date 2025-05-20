@@ -128,6 +128,34 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(resolved), 2)
         self.assertTrue(all(user.name == "Alice" and user.is_active for user in resolved))
 
+    def test_filter_before_permission_check(self):
+        class User:
+            def __init__(self, name, is_active):
+                self.name = name
+                self.is_active = is_active
+                self._meta = True
+
+            def __str__(self):
+                return self.name
+
+        class RequestUser:
+            def has_perm(self, perm, obj):
+                return obj.name != "Deny"
+
+        users = [User("Allow", True), User("Deny", True)]
+
+        class Container:
+            def __init__(self, users):
+                self.users = users
+
+        container = Container(users)
+        context = {"container": container}
+        req_user = RequestUser()
+
+        expr = "container.users[is_active=True, name=Allow]"
+        resolved = resolve_formatted_tag(expr, context, perm_user=req_user)
+        self.assertEqual(resolved, [users[0]])
+
     def test_empty_expression(self):
         # Empty expression should yield an empty string.
         self.assertEqual(resolve_formatted_tag("", {}), "")

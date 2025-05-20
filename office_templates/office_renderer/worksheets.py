@@ -1,6 +1,7 @@
 from template_reports.templating.list import process_text_list
 
 from .exceptions import CellOverwriteError
+from .images import should_replace_cell_with_image, replace_cell_with_image
 
 
 def process_worksheet(worksheet, context: dict, perm_user=None):
@@ -19,6 +20,16 @@ def process_worksheet(worksheet, context: dict, perm_user=None):
     # Process column by column, THEN each element (row) of the column.
     for col in worksheet.iter_cols():
         for cell_idx, cell in enumerate(col):
+            # If this cell contains an image directive, replace it and skip further processing.
+            if should_replace_cell_with_image(cell):
+                replace_cell_with_image(
+                    cell,
+                    worksheet,
+                    context=context,
+                    perm_user=perm_user,
+                )
+                continue
+
             # Process the cell value (with placeholders or otherwise)
             processed_value_list = process_text_list([cell.value], **process_kwargs)
 

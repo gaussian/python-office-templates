@@ -1,6 +1,10 @@
 from pptx import Presentation
 
 from .charts import process_chart
+from .images import (
+    replace_shape_with_image,
+    should_replace_shape_with_image,
+)
 from .paragraphs import process_paragraph
 from .tables import process_table_cell
 
@@ -28,6 +32,22 @@ def render_pptx(template, context: dict, output, perm_user):
         }
 
         for shape in slide.shapes:
+            # Check if this shape should be replaced with an image.
+            if should_replace_shape_with_image(shape):
+                try:
+                    replace_shape_with_image(
+                        shape,
+                        slide,
+                        context=slide_context,
+                        perm_user=perm_user,
+                    )
+                except Exception as e:
+                    errors.append(
+                        f"Error processing image (slide {slide_number}): {e}"
+                    )
+                # Skip further processing for this shape
+                continue
+
             # 1) Process text frames (non-table).
             if hasattr(shape, "text_frame"):
                 for paragraph in shape.text_frame.paragraphs:
@@ -65,6 +85,7 @@ def render_pptx(template, context: dict, output, perm_user):
                     )
                 except Exception as e:
                     errors.append(f"Error in chart (slide {slide_number}): {e}")
+
 
     if errors:
         print("Rendering aborted due to the following errors:")

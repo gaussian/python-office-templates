@@ -162,6 +162,24 @@ class TestProcessWorksheet(unittest.TestCase):
                 worksheet=self.worksheet, context=self.context, perm_user=None
             )
 
+    @patch("template_reports.office_renderer.worksheets.replace_cell_with_image")
+    @patch("template_reports.office_renderer.worksheets.process_text_list")
+    def test_image_cell_replacement(self, mock_process_text_list, mock_replace):
+        """Cells starting with %image% should trigger image replacement."""
+
+        cell_img = MagicMock()
+        cell_img.value = "%imagesqueeze% file://foo.png"
+        cell_img.column_letter = "A"
+
+        self.worksheet.iter_cols.return_value = [[cell_img]]
+
+        process_worksheet(worksheet=self.worksheet, context=self.context, perm_user=None)
+
+        mock_replace.assert_called_once_with(
+            cell_img, self.worksheet, context=self.context, perm_user=None
+        )
+        mock_process_text_list.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

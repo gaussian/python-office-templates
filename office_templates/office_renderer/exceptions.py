@@ -32,3 +32,9 @@ class ChartError(Exception):
     """Raised when an error occurs while processing a chart."""
 
     pass
+
+
+class ImageError(Exception):
+    """Raised when an error occurs while processing an image."""
+
+    pass
