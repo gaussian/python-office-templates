@@ -2,7 +2,7 @@ import re
 import datetime
 
 from .exceptions import BadTagException, MissingDataException, TagCallableException
-from .formatting import convert_date_format, format_value
+from .formatting import format_value
 from .parse import get_nested_attr, evaluate_condition, parse_callable_args
 from .permissions import enforce_permissions
 
