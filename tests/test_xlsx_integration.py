@@ -271,7 +271,7 @@ class TestXlsxIntegration(unittest.TestCase):
         self.assertEqual(ws_callable["A3"].value, 30.0)  # 10+5=15, 15*2=30
 
     def test_image_cell_integration(self):
-        """A cell starting with %image% should be replaced with a picture."""
+        """A cell starting with %imagesqueeze% should be replaced with a picture."""
 
         from PIL import Image
 
@@ -280,7 +280,7 @@ class TestXlsxIntegration(unittest.TestCase):
         img.save(img_file)
 
         ws = self.wb.create_sheet(title="Images")
-        ws["A1"] = f"%image% file://{img_file}"
+        ws["A1"] = f"%imagesqueeze% file://{img_file}"
         self.wb.save(self.temp_input)
 
         rendered, errors = render_xlsx(

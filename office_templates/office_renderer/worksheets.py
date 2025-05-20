@@ -22,7 +22,12 @@ def process_worksheet(worksheet, context: dict, perm_user=None):
         for cell_idx, cell in enumerate(col):
             # If this cell contains an image directive, replace it and skip further processing.
             if should_replace_cell_with_image(cell):
-                replace_cell_with_image(cell, worksheet)
+                replace_cell_with_image(
+                    cell,
+                    worksheet,
+                    context=context,
+                    perm_user=perm_user,
+                )
                 continue
 
             # Process the cell value (with placeholders or otherwise)

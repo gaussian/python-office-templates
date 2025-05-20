@@ -35,7 +35,12 @@ def render_pptx(template, context: dict, output, perm_user):
             # Check if this shape should be replaced with an image.
             if should_replace_shape_with_image(shape):
                 try:
-                    replace_shape_with_image(shape, slide)
+                    replace_shape_with_image(
+                        shape,
+                        slide,
+                        context=slide_context,
+                        perm_user=perm_user,
+                    )
                 except Exception as e:
                     errors.append(
                         f"Error processing image (slide {slide_number}): {e}"
