@@ -335,7 +335,7 @@ def resolve_segment(current, segment, perm_user=None):
         else:
             if hasattr(value, "all") and callable(value.all):
                 value = value.all()
-        return list(value)
+        value = list(value)
     else:
         # For non-queryset values that are lists or single objects, apply filtering if provided.
         value_list = value if isinstance(value, list) else [value]
@@ -346,7 +346,6 @@ def resolve_segment(current, segment, perm_user=None):
                 for item in value_list
                 if all(evaluate_condition(item, cond) for cond in conditions)
             ]
-        # Enforce permissions on each item if needed.
-        for value_item in value_list:
-            enforce_permissions(value_item, perm_user)
-        return value
+    # Enforce permissions on the filtered result.
+    value = enforce_permissions(value, perm_user)
+    return value
