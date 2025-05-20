@@ -3,8 +3,6 @@ from __future__ import annotations
 from io import BytesIO
 from urllib.request import urlopen
 
-from pptx.enum.shapes import MSO_SHAPE_TYPE
-from pptx.util import Inches
 from openpyxl.drawing.image import Image as XLImage
 from PIL import Image as PILImage
 
@@ -87,8 +85,8 @@ def replace_shape_with_image(
         pic = slide.shapes.add_picture(BytesIO(data), left, top, width=width, height=height)
     else:
         pic = slide.shapes.add_picture(BytesIO(data), left, top)
-        native_w = pic.image.width
-        native_h = pic.image.height
+        with PILImage.open(BytesIO(data)) as pil_img:
+            native_w, native_h = pil_img.size
         w_ratio = width / native_w
         h_ratio = height / native_h
         scale = min(w_ratio, h_ratio)

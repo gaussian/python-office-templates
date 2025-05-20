@@ -57,7 +57,8 @@ class TestSlideDownloadedImage(unittest.TestCase):
 
         # Create non-square shape
         shape = self.slide.shapes.add_textbox(Inches(3), Inches(3), Inches(4), Inches(1))
-        shape.text_frame.text = f"%image% {{ img }}"
+        # Use explicit braces so the URL placeholder is passed through for processing
+        shape.text_frame.text = "%image% {{ img }}"
 
         replace_shape_with_image(shape, self.slide, context=self.context)
 

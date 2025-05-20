@@ -243,7 +243,7 @@ class TestRendererIntegration(unittest.TestCase):
 
         from PIL import Image
 
-        img = Image.new("RGB", (2, 2), color="red")
+        img = Image.new("RGB", (200, 100), color="red")  # Use different dimensions to test aspect ratio
         img_file = tempfile.mktemp(suffix=".png")
         img.save(img_file)
 
