@@ -15,10 +15,11 @@ from template_reports.templating.core import process_text
 
 
 class DummyUser:
-    def __init__(self, name, email, is_active=True):
+    def __init__(self, name, email, is_active=True, friend_count=0):
         self.name = name
         self.email = email
         self.is_active = is_active
+        self.friend_count = friend_count
         # Simulate a Django object by adding _meta
         self._meta = True
 
@@ -57,9 +58,9 @@ class TestTemplatingNormalMode(unittest.TestCase):
     def setUp(self):
         # Create a dummy cohort, users, and program context.
         self.cohort = DummyCohort("Cohort A")
-        self.user1 = DummyUser("Alice", "alice@example.com", is_active=True)
-        self.user2 = DummyUser("Bob", "bob@example.com", is_active=True)
-        self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True)
+        self.user1 = DummyUser("Alice", "alice-three@example.com", is_active=True, friend_count=2)
+        self.user2 = DummyUser("Bob", "bob@example.com", is_active=True, friend_count=0)
+        self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True, friend_count=1)
         # program.users as a list (simulate queryset already converted to a list)
         self.program = {
             "users": [self.user1, self.user2, self.django_user],
@@ -140,7 +141,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
             perm_user=None,
             mode="normal",
         )
-        # Expected: "All emails: alice@example.com, bob@example.com, deny@example.com are active."
+        # Expected: "All emails: alice-three@example.com, bob@example.com, deny@example.com are active."
         expected = (
             f"All emails: {', '.join(u.email for u in self.program['users'])} are active."
         )
@@ -387,13 +388,24 @@ class TestTemplatingNormalMode(unittest.TestCase):
         )
         self.assertEqual(result, "Hello World")
 
+    def test_filter_and_math_operation(self):
+        tpl = "{{ program.users[is_active=True, email=alice-three@example.com].friend_count * 2 }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        # The filtered list will join a single email into a string, and then multiply by 2 to give 4.
+        self.assertEqual(result, "4.0")
+
 
 # ----- Test Case for Table Mode -----
 class TestTemplatingTableMode(unittest.TestCase):
     def setUp(self):
         # Create a dummy cohort, users, and program context.
         self.cohort = DummyCohort("Cohort A")
-        self.user1 = DummyUser("Alice", "alice@example.com", is_active=True)
+        self.user1 = DummyUser("Alice", "alice-three@example.com", is_active=True)
         self.user2 = DummyUser("Bob", "bob@example.com", is_active=True)
         self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True)
         # program.users as a list (simulate queryset already converted to a list)
