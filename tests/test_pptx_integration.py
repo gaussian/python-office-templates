@@ -211,7 +211,7 @@ class TestRendererIntegration(unittest.TestCase):
         self.assertIn("Result3: 30.0", txt)  # 10+5=15, 15*2=30
 
     def test_image_download_and_replace(self):
-        """A text box starting with %image% should be replaced by a picture."""
+        """A text box starting with %imagesqueeze% should be replaced by a picture."""
 
         from PIL import Image
 
@@ -221,7 +221,7 @@ class TestRendererIntegration(unittest.TestCase):
 
         slide = self.prs.slides.add_slide(self.prs.slide_layouts[5])
         box = slide.shapes.add_textbox(Inches(0.5), Inches(5), Inches(2), Inches(2))
-        box.text_frame.text = f"%image% file://{img_file}"
+        box.text_frame.text = f"%imagesqueeze% file://{img_file}"
 
         self.prs.save(self.temp_input)
 
@@ -235,6 +235,34 @@ class TestRendererIntegration(unittest.TestCase):
         self.assertEqual(pic_shape.shape_type, MSO_SHAPE_TYPE.PICTURE)
         self.assertEqual(pic_shape.width, box.width)
         self.assertEqual(pic_shape.height, box.height)
+
+        os.remove(img_file)
+
+    def test_image_download_and_fit(self):
+        """%image% should fit inside the shape keeping aspect ratio."""
+
+        from PIL import Image
+
+        img = Image.new("RGB", (200, 100), color="red")  # Use different dimensions to test aspect ratio
+        img_file = tempfile.mktemp(suffix=".png")
+        img.save(img_file)
+
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[5])
+        box = slide.shapes.add_textbox(Inches(0.5), Inches(5), Inches(4), Inches(1))
+        box.text_frame.text = f"%image% file://{img_file}"
+
+        self.prs.save(self.temp_input)
+
+        rendered, errors = render_pptx(
+            self.temp_input, self.context, self.temp_output, perm_user=None
+        )
+        self.assertIsNone(errors)
+
+        prs_out = Presentation(rendered)
+        pic_shape = prs_out.slides[-1].shapes[-1]
+        self.assertEqual(pic_shape.shape_type, MSO_SHAPE_TYPE.PICTURE)
+        self.assertEqual(pic_shape.height, box.height)
+        self.assertLess(pic_shape.width, box.width)
 
         os.remove(img_file)
 
