@@ -1,11 +1,12 @@
+import datetime
 import os
 import tempfile
 import unittest
-import datetime
 
 from pptx import Presentation
-from pptx.util import Inches
 from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.util import Inches
 
 from template_reports.office_renderer import render_pptx
 
@@ -208,6 +209,34 @@ class TestRendererIntegration(unittest.TestCase):
         self.assertIn("Result1: 120.0", txt)  # 3*4=12, 12*10=120
         self.assertIn("Result2: 17.0", txt)  # 3*4=12, 12+5=17
         self.assertIn("Result3: 30.0", txt)  # 10+5=15, 15*2=30
+
+    def test_image_download_and_replace(self):
+        """A text box starting with %image% should be replaced by a picture."""
+
+        from PIL import Image
+
+        img = Image.new("RGB", (2, 2), color="red")
+        img_file = tempfile.mktemp(suffix=".png")
+        img.save(img_file)
+
+        slide = self.prs.slides.add_slide(self.prs.slide_layouts[5])
+        box = slide.shapes.add_textbox(Inches(0.5), Inches(5), Inches(2), Inches(2))
+        box.text_frame.text = f"%image% file://{img_file}"
+
+        self.prs.save(self.temp_input)
+
+        rendered, errors = render_pptx(
+            self.temp_input, self.context, self.temp_output, perm_user=None
+        )
+        self.assertIsNone(errors)
+
+        prs_out = Presentation(rendered)
+        pic_shape = prs_out.slides[-1].shapes[-1]
+        self.assertEqual(pic_shape.shape_type, MSO_SHAPE_TYPE.PICTURE)
+        self.assertEqual(pic_shape.width, box.width)
+        self.assertEqual(pic_shape.height, box.height)
+
+        os.remove(img_file)
 
 
 if __name__ == "__main__":

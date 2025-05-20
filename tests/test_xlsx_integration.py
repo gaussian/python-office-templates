@@ -270,6 +270,32 @@ class TestXlsxIntegration(unittest.TestCase):
         self.assertEqual(ws_callable["A2"].value, 17.0)  # 3*4=12, 12+5=17
         self.assertEqual(ws_callable["A3"].value, 30.0)  # 10+5=15, 15*2=30
 
+    def test_image_cell_integration(self):
+        """A cell starting with %image% should be replaced with a picture."""
+
+        from PIL import Image
+
+        img = Image.new("RGB", (2, 2), color="blue")
+        img_file = tempfile.mktemp(suffix=".png")
+        img.save(img_file)
+
+        ws = self.wb.create_sheet(title="Images")
+        ws["A1"] = f"%image% file://{img_file}"
+        self.wb.save(self.temp_input)
+
+        rendered, errors = render_xlsx(
+            self.temp_input, self.context, self.temp_output, perm_user=None
+        )
+        self.assertIsNone(errors)
+
+        output_wb = load_workbook(rendered)
+        ws_out = output_wb["Images"]
+        self.assertEqual(len(ws_out._images), 1)
+        anchor = ws_out._images[0].anchor._from.row, ws_out._images[0].anchor._from.col
+        self.assertEqual(anchor, (0, 0))  # anchored at A1 (0-indexed)
+
+        os.remove(img_file)
+
 
 if __name__ == "__main__":
     unittest.main()
