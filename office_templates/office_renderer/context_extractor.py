@@ -96,7 +96,6 @@ def extract_context_keys(template) -> dict[str, list[str]]:
         object_fields.update(keys["object_fields"])
 
     # Remove loop variables from the extracted fields
-    simple_fields = simple_fields - loop_variables
     object_fields = object_fields - loop_variables
 
     return {
