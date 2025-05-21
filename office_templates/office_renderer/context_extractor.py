@@ -2,13 +2,11 @@ import re
 from pptx import Presentation
 
 from .charts import get_raw_chart_data
-from .loops import extract_loop_directive
+from .loops import extract_loop_directive, LOOP_START_PATTERN
 from .paragraphs import merge_split_placeholders
 
 # Pattern to match placeholders, e.g. "{{ some.placeholder }}"
 PLACEHOLDER_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}")
-# Pattern to match loop directives
-LOOP_START_PATTERN = re.compile(r"%loop\s+(\w+)\s+in\s+(\w+)%")
 
 
 def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:

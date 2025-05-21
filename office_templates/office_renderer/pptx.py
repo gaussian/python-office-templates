@@ -10,123 +10,10 @@ from .loops import (
     extract_loop_directive,
     is_loop_end,
     is_loop_start,
+    process_loops,
 )
 from .paragraphs import process_paragraph
 from .tables import process_table_cell
-
-
-def process_loops(prs, context, perm_user, errors):
-    """
-    Process loops in the presentation:
-    - Identify loop sections (slides between %loop var in collection% and %endloop%)
-    - Duplicate those slides for each item in the collection
-    - Return a list of slides to process with their context info
-    """
-    slides_to_process = []
-    in_loop = False
-    loop_start_index = -1
-    loop_variable = None
-    loop_collection = None
-    
-    # First, extract loop information from the slides
-    for i, slide in enumerate(prs.slides):
-        slide_number = i + 1
-        # Track whether this slide has loop directives
-        has_loop_start = False
-        has_loop_end = False
-        
-        for shape in slide.shapes:
-            # Check for loop start
-            if is_loop_start(shape):
-                if in_loop:
-                    errors.append(f"Error on slide {slide_number}: Nested loops are not supported")
-                    continue
-                    
-                variable, collection = extract_loop_directive(shape.text_frame.text)
-                if variable and collection:
-                    in_loop = True
-                    loop_start_index = i
-                    loop_variable = variable
-                    loop_collection = collection
-                    has_loop_start = True
-            
-            # Check for loop end
-            if is_loop_end(shape):
-                if not in_loop:
-                    errors.append(f"Error on slide {slide_number}: %endloop% without a matching loop start")
-                    continue
-                    
-                has_loop_end = True
-        
-        # Cannot have both loop start and end on the same slide
-        if has_loop_start and has_loop_end:
-            errors.append(f"Error on slide {slide_number}: Cannot have both loop start and end on the same slide")
-            in_loop = False
-            loop_start_index = -1
-            loop_variable = None
-            loop_collection = None
-        
-        # If we found the end of a loop, process it
-        if has_loop_end and in_loop:
-            loop_end_index = i
-            
-            # Get the collection from the context
-            collection_value = context.get(loop_collection)
-            if collection_value is None:
-                errors.append(f"Error on slide {slide_number}: Collection '{loop_collection}' not found in context")
-                in_loop = False
-                continue
-                
-            # Ensure the collection is iterable
-            try:
-                iter(collection_value)
-            except TypeError:
-                errors.append(f"Error on slide {slide_number}: '{loop_collection}' is not iterable")
-                in_loop = False
-                continue
-            
-            # For each item in the collection, duplicate the loop slides
-            loop_slides = []
-            for loop_item in collection_value:
-                for j in range(loop_start_index, loop_end_index + 1):
-                    slide_info = {
-                        "slide": prs.slides[j],
-                        "slide_number": j + 1,
-                        "loop_var": loop_variable,
-                        "loop_item": loop_item
-                    }
-                    loop_slides.append(slide_info)
-            
-            # Mark these slides for processing
-            slides_to_process.extend(loop_slides)
-            
-            # Reset loop state
-            in_loop = False
-            loop_start_index = -1
-            loop_variable = None
-            loop_collection = None
-    
-    # If we're still in a loop at the end, that's an error
-    if in_loop:
-        errors.append(f"Error: Loop started but never closed with %endloop%")
-    
-    # Add all non-loop slides to the processing list
-    for i, slide in enumerate(prs.slides):
-        # Check if this slide is part of a loop
-        is_in_loop = False
-        for shape in slide.shapes:
-            if is_loop_start(shape) or is_loop_end(shape):
-                is_in_loop = True
-                break
-        
-        # If not in a loop, add it for regular processing
-        if not is_in_loop:
-            slides_to_process.append({
-                "slide": slide,
-                "slide_number": i + 1
-            })
-    
-    return slides_to_process
 
 
 def render_pptx(template, context: dict, output, perm_user):
@@ -146,6 +33,9 @@ def render_pptx(template, context: dict, output, perm_user):
     # Process loops first - identify loop sections and duplicate slides
     slides_to_process = process_loops(prs, context, perm_user, errors)
     
+    # Track which slides and shapes have been processed to avoid processing the same data multiple times
+    processed_content = set()
+    
     # Process all slides including duplicated ones from loops
     for slide_info in slides_to_process:
         slide = slide_info["slide"]
@@ -159,7 +49,19 @@ def render_pptx(template, context: dict, output, perm_user):
         
         # Add loop variable to context if present
         if "loop_var" in slide_info and "loop_item" in slide_info:
+            loop_id = id(slide_info["loop_item"])  # Use object id to distinguish between iterations
             slide_context[slide_info["loop_var"]] = slide_info["loop_item"]
+        else:
+            loop_id = None
+        
+        # Create a unique ID for this slide in this context
+        slide_context_id = f"{id(slide)}_{loop_id}"
+        
+        # Skip if we've already processed this exact slide with this exact context
+        if slide_context_id in processed_content:
+            continue
+            
+        processed_content.add(slide_context_id)
         
         # Process the slide's shapes
         for shape in slide.shapes:
