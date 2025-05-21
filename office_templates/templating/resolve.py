@@ -88,10 +88,15 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
             format_expr = format_expr[1:-1]
 
     # Preparing for mathematical operators:
-    # Split at the last closing parenthesis if present, keeping both parts
-    if ")" in value_expr:
-        pre_part, _, value_expr_post_brackets = value_expr.rpartition(")")
-        pre_part += ")"
+    # Split at the last closing parenthesis or bracket if present, keeping both parts
+    # Determine the last occurrence of ')' or ']' and split accordingly
+    last_paren = value_expr.rfind(")")
+    last_bracket = value_expr.rfind("]")
+    if last_paren != -1 or last_bracket != -1:
+        # Choose the splitter that occurs later in the string
+        splitter = ")" if last_paren > last_bracket else "]"
+        pre_part, _, value_expr_post_brackets = value_expr.rpartition(splitter)
+        pre_part += splitter
         value_expr_post_brackets = value_expr_post_brackets.strip()
     else:
         pre_part = ""
@@ -125,23 +130,34 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
     # Perform mathematical operations if applicable.
     if math_operator and math_operand is not None:
         try:
-            value = float(value if value else 0)
+            value = apply_math_operator(value, math_operator, math_operand)
         except ValueError:
             raise BadTagException(
                 f"Invalid value for mathematical operation '{value_expr}': '{value}'"
             )
-        if math_operator == "+":
-            value += math_operand
-        elif math_operator == "-":
-            value -= math_operand
-        elif math_operator == "*":
-            value *= math_operand
-        elif math_operator == "/":
-            value /= math_operand
 
     # If a format string is provided...
     if format_expr:
         value = format_value(value, format_expr)
+
+    return value
+
+
+def apply_math_operator(value, math_operator, operand):
+    # If the value is a list, apply the operation to each element.
+    if isinstance(value, list):
+        return [apply_math_operator(v, math_operator, operand) for v in value]
+    
+    value = float(value if value else 0)
+
+    if math_operator == "+":
+        value += operand
+    elif math_operator == "-":
+        value -= operand
+    elif math_operator == "*":
+        value *= operand
+    elif math_operator == "/":
+        value /= operand
 
     return value
 
