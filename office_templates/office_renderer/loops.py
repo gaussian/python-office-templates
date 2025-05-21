@@ -30,6 +30,10 @@ def is_loop_start(shape) -> bool:
     if not hasattr(shape, "text_frame"):
         return False
     
+    # For mocks in tests
+    if not hasattr(shape.text_frame, "text"):
+        return False
+    
     variable, collection = extract_loop_directive(shape.text_frame.text)
     return variable is not None and collection is not None
 
@@ -37,6 +41,10 @@ def is_loop_start(shape) -> bool:
 def is_loop_end(shape) -> bool:
     """Return True if the shape text indicates a loop end."""
     if not hasattr(shape, "text_frame"):
+        return False
+    
+    # For mocks in tests
+    if not hasattr(shape.text_frame, "text"):
         return False
     
     text = shape.text_frame.text
