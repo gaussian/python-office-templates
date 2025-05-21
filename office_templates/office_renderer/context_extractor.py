@@ -2,10 +2,13 @@ import re
 from pptx import Presentation
 
 from .charts import get_raw_chart_data
+from .loops import extract_loop_directive
 from .paragraphs import merge_split_placeholders
 
 # Pattern to match placeholders, e.g. "{{ some.placeholder }}"
 PLACEHOLDER_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}")
+# Pattern to match loop directives
+LOOP_START_PATTERN = re.compile(r"%loop\s+(\w+)\s+in\s+(\w+)%")
 
 
 def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:
@@ -51,11 +54,20 @@ def extract_context_keys(template) -> dict[str, list[str]]:
 
     simple_fields = set()
     object_fields = set()
+    loop_variables = set()  # Store loop iterator variables to ignore them
 
     # Build a list of all texts on all slides.
     texts = []
     for slide in prs.slides:
         for shape in slide.shapes:
+            # Check for loop directives
+            if hasattr(shape, "text_frame"):
+                loop_var, loop_collection = extract_loop_directive(shape.text_frame.text)
+                if loop_var and loop_collection:
+                    # Add collection to object_fields
+                    object_fields.add(loop_collection)
+                    # Add loop variable to ignored list
+                    loop_variables.add(loop_var)
 
             # Process text frames.
             if hasattr(shape, "text_frame"):
@@ -82,6 +94,10 @@ def extract_context_keys(template) -> dict[str, list[str]]:
         keys = extract_top_level_context_keys_from_text(text)
         simple_fields.update(keys["simple_fields"])
         object_fields.update(keys["object_fields"])
+
+    # Remove loop variables from the extracted fields
+    simple_fields = simple_fields - loop_variables
+    object_fields = object_fields - loop_variables
 
     return {
         "simple_fields": sorted(simple_fields),
