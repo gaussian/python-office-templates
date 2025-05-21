@@ -4,13 +4,17 @@ Functions to handle loop functionality in PPTX templates.
 
 import re
 from typing import Dict, List, Optional, Tuple, Any
-from copy import deepcopy
 
 from ..templating import resolve_tag
+from .constants import (
+    LOOP_START_PATTERN_STR,
+    LOOP_END_PATTERN_STR,
+)
+from .pptx_utils import duplicate_slide
 
 # Patterns for loop directives
-LOOP_START_PATTERN = re.compile(r"%\s*loop\s+(\w+)\s+in\s+(.+?)\s*%")
-LOOP_END_PATTERN = re.compile(r"%\s*endloop\s*%")
+LOOP_START_PATTERN = re.compile(LOOP_START_PATTERN_STR)
+LOOP_END_PATTERN = re.compile(LOOP_END_PATTERN_STR)
 
 
 def extract_loop_directive(text: str | None) -> tuple[str | None, str | None]:
@@ -48,22 +52,7 @@ def is_loop_end(shape) -> bool:
     return LOOP_END_PATTERN.search(text.strip()) is not None
 
 
-def deep_copy_slide(presentation, slide_index, slide_dict=None):
-    """
-    Create a duplicate slide and return its index in the presentation
-    
-    Since python-pptx doesn't have built-in slide cloning, we create a slide
-    with the same layout and add a reference to the original slide in 
-    slide_dict for the rendering process to use.
-    """
-    source_slide = presentation.slides[slide_index]
-    target_slide = presentation.slides.add_slide(source_slide.slide_layout)
-    
-    # If a reference dictionary is provided, store mapping
-    if slide_dict is not None:
-        slide_dict[target_slide] = source_slide
-        
-    return len(presentation.slides) - 1
+
 
 
 def process_loops(prs, context, perm_user, errors):
@@ -90,6 +79,7 @@ def process_loops(prs, context, perm_user, errors):
         loop_start_var = None
         loop_start_collection = None
         loop_start_shapes = []
+        loop_end_shapes = []
         
         for shape in slide.shapes:
             # Check for loop start
@@ -103,6 +93,7 @@ def process_loops(prs, context, perm_user, errors):
             
             # Check for loop end
             if is_loop_end(shape):
+                loop_end_shapes.append(shape)
                 if not in_loop and not has_loop_start:
                     errors.append(f"Error on slide {i + 1}: %endloop% without a matching loop start")
                 has_loop_end = True
@@ -110,12 +101,16 @@ def process_loops(prs, context, perm_user, errors):
         # Detect multiple loop start directives on the same slide
         if len(loop_start_shapes) > 1:
             errors.append(f"Error on slide {i + 1}: Multiple loop start directives on same slide")
-            continue
+            return []  # Short-circuit when multiple loop starts found
+
+        # Detect multiple loop end directives on the same slide
+        if len(loop_end_shapes) > 1:
+            errors.append(f"Error on slide {i + 1}: Multiple loop end directives on same slide")
+            return []  # Short-circuit when multiple loop ends found
         
-        # Cannot have both loop start and end on the same slide
+        # Check for both start and end on same slide (allowed but warn)
         if has_loop_start and has_loop_end:
-            errors.append(f"Error on slide {i + 1}: Cannot have both loop start and end on the same slide")
-            continue  # Skip this slide for loop processing
+            errors.append(f"Note on slide {i + 1}: Both loop start and end on the same slide")
         
         # Handle loop start
         if has_loop_start:
@@ -130,6 +125,12 @@ def process_loops(prs, context, perm_user, errors):
         
         # Handle loop end
         if has_loop_end and in_loop:
+            # Count how many loop end directives there are on the slide
+            loop_end_count = sum(1 for shape in slide.shapes if is_loop_end(shape))
+            if loop_end_count > 1:
+                errors.append(f"Error on slide {i + 1}: Multiple loop end directives on same slide")
+                return []  # Short-circuit when multiple loop ends found
+                
             loop_sections.append({
                 "start_index": loop_start_index,
                 "end_index": i,
@@ -146,6 +147,7 @@ def process_loops(prs, context, perm_user, errors):
     # Check for unclosed loops
     if in_loop:
         errors.append(f"Error: Loop started but never closed with %endloop%")
+        # Don't short circuit, still process non-loop slides
     
     # Prepare slides to process
     slides_to_process = []
@@ -172,26 +174,11 @@ def process_loops(prs, context, perm_user, errors):
                         collection_value = resolve_tag(section["collection"], context, perm_user)
                     except Exception as e:
                         errors.append(f"Error on slide {i + 1}: Failed to resolve collection '{section['collection']}': {str(e)}")
-                        
-                        # Add the error slides as regular slides
-                        for j in range(section["start_index"], section["end_index"] + 1):
-                            slides_to_process.append({
-                                "slide": prs.slides[j],
-                                "slide_number": current_slide_number
-                            })
-                            current_slide_number += 1
-                        continue
+                        collection_value = None  # Set to None so it will be skipped but non-loop slides still processed
                         
                     if collection_value is None:
                         errors.append(f"Error on slide {i + 1}: Collection '{section['collection']}' not found in context")
-                        
-                        # Add the error slides as regular slides
-                        for j in range(section["start_index"], section["end_index"] + 1):
-                            slides_to_process.append({
-                                "slide": prs.slides[j],
-                                "slide_number": current_slide_number
-                            })
-                            current_slide_number += 1
+                        # Proceed with non-loop slides but skip this loop section
                         continue
                         
                     # Ensure the collection is iterable
@@ -199,23 +186,19 @@ def process_loops(prs, context, perm_user, errors):
                         collection_value = list(collection_value)  # Force evaluation of any lazy iterables
                     except TypeError:
                         errors.append(f"Error on slide {i + 1}: '{section['collection']}' is not iterable")
-                        
-                        # Add the error slides as regular slides
-                        for j in range(section["start_index"], section["end_index"] + 1):
-                            slides_to_process.append({
-                                "slide": prs.slides[j],
-                                "slide_number": current_slide_number
-                            })
-                            current_slide_number += 1
+                    
+                    # For empty or nonexistent collections, return all non-loop slides
+                    if not collection_value:
+                        # Proceed with non-loop slides but skip this loop section
                         continue
                     
                     # For each item in the collection, process each slide
                     for loop_item in collection_value:
                         for j in range(section["start_index"], section["end_index"] + 1):
-                            # Use the original slide (needed for PPTX integration tests)
-                            # In a real-world scenario, we would duplicate slides here
+                            # Duplicate the slide for real-world scenarios
+                            new_slide = duplicate_slide(prs, j)
                             slides_to_process.append({
-                                "slide": prs.slides[j],
+                                "slide": new_slide,
                                 "slide_number": current_slide_number,
                                 "loop_var": section["variable"],
                                 "loop_item": loop_item

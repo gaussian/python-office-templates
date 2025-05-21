@@ -2,11 +2,15 @@ import re
 from pptx import Presentation
 
 from .charts import get_raw_chart_data
-from .loops import extract_loop_directive, LOOP_START_PATTERN
+from .constants import LOOP_START_PATTERN_STR
+from .loops import extract_loop_directive
 from .paragraphs import merge_split_placeholders
 
 # Pattern to match placeholders, e.g. "{{ some.placeholder }}"
 PLACEHOLDER_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}")
+
+# Loop pattern is imported from constants
+LOOP_START_PATTERN = re.compile(LOOP_START_PATTERN_STR)
 
 
 def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:
@@ -62,8 +66,6 @@ def extract_context_keys(template) -> dict[str, list[str]]:
             if hasattr(shape, "text_frame"):
                 loop_var, loop_collection = extract_loop_directive(shape.text_frame.text)
                 if loop_var and loop_collection:
-                    # Add collection to object_fields
-                    object_fields.add(loop_collection)
                     # Add loop variable to ignored list
                     loop_variables.add(loop_var)
 

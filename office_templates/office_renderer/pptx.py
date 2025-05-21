@@ -33,9 +33,6 @@ def render_pptx(template, context: dict, output, perm_user):
     # Process loops first - identify loop sections and duplicate slides
     slides_to_process = process_loops(prs, context, perm_user, errors)
     
-    # Track which slides and shapes have been processed to avoid processing the same data multiple times
-    processed_content = set()
-    
     # Process all slides including duplicated ones from loops
     for slide_info in slides_to_process:
         slide = slide_info["slide"]
@@ -49,19 +46,7 @@ def render_pptx(template, context: dict, output, perm_user):
         
         # Add loop variable to context if present
         if "loop_var" in slide_info and "loop_item" in slide_info:
-            loop_id = id(slide_info["loop_item"])  # Use object id to distinguish between iterations
             slide_context[slide_info["loop_var"]] = slide_info["loop_item"]
-        else:
-            loop_id = None
-        
-        # Create a unique ID for this slide in this context
-        slide_context_id = f"{id(slide)}_{loop_id}"
-        
-        # Skip if we've already processed this exact slide with this exact context
-        if slide_context_id in processed_content:
-            continue
-            
-        processed_content.add(slide_context_id)
         
         # Process the slide's shapes
         for shape in slide.shapes:
