@@ -3,6 +3,7 @@ Utility functions for PPTX manipulation.
 """
 
 from copy import deepcopy
+from pptx import Presentation
 
 
 def duplicate_slide(pres, index):
@@ -31,3 +32,58 @@ def duplicate_slide(pres, index):
         new_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
 
     return new_slide
+
+
+def remove_shape(slide, shape):
+    """
+    Remove a shape from a slide.
+    
+    This function removes a shape by removing its XML element from the slide's shape tree.
+    
+    Args:
+        slide: The slide object containing the shape
+        shape: The shape object to remove
+    """
+    try:
+        parent = shape.element.getparent()
+        if parent is not None:
+            parent.remove(shape.element)
+    except Exception as e:
+        print(f"Error removing shape: {e}")
+        # Continue execution even if shape removal fails
+
+
+def create_new_presentation_from_slides(slides_to_include):
+    """
+    Create a new presentation containing only the specified slides.
+    
+    Args:
+        slides_to_include: List of slide objects to include in the new presentation
+        
+    Returns:
+        A new Presentation object with only the specified slides
+    """
+    if not slides_to_include:
+        return None
+    
+    # Create new presentation
+    new_prs = Presentation()
+    
+    # Copy master slides and layouts from first presentation
+    # Note: This is simplified - complete implementation would need to handle masters and layouts
+    
+    # Add each slide to the new presentation
+    for slide in slides_to_include:
+        # Get layout from original slide
+        layout = slide.slide_layout
+        
+        # Add new slide with same layout
+        new_slide = new_prs.slides.add_slide(layout)
+        
+        # Copy all shapes from source to destination
+        for shape in slide.shapes:
+            el = shape.element
+            new_el = deepcopy(el)
+            new_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
+    
+    return new_prs

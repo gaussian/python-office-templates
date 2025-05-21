@@ -62,9 +62,6 @@ def process_loops(prs, context, perm_user, errors):
     - For each item in the collection, create a mapping between loop slides and variables
     - Return a list of slides to process with their context info
     """
-    # We'll use this to track which original slides each output slide corresponds to
-    slide_mapping = {}
-    
     # First pass: identify loop sections and collect info about them
     loop_sections = []
     in_loop = False
@@ -147,7 +144,7 @@ def process_loops(prs, context, perm_user, errors):
     # Check for unclosed loops
     if in_loop:
         errors.append(f"Error: Loop started but never closed with %endloop%")
-        # Don't short circuit, still process non-loop slides
+        return []  # Short-circuit when unclosed loop found
     
     # Prepare slides to process
     slides_to_process = []
@@ -186,8 +183,9 @@ def process_loops(prs, context, perm_user, errors):
                         collection_value = list(collection_value)  # Force evaluation of any lazy iterables
                     except TypeError:
                         errors.append(f"Error on slide {i + 1}: '{section['collection']}' is not iterable")
+                        continue
                     
-                    # For empty or nonexistent collections, return all non-loop slides
+                    # For empty or nonexistent collections, skip this loop section
                     if not collection_value:
                         # Proceed with non-loop slides but skip this loop section
                         continue
@@ -201,7 +199,8 @@ def process_loops(prs, context, perm_user, errors):
                                 "slide": new_slide,
                                 "slide_number": current_slide_number,
                                 "loop_var": section["variable"],
-                                "loop_item": loop_item
+                                "loop_item": loop_item,
+                                "is_duplicate": True
                             })
                             current_slide_number += 1
                     
@@ -211,7 +210,8 @@ def process_loops(prs, context, perm_user, errors):
         if not is_loop_slide:
             slides_to_process.append({
                 "slide": slide,
-                "slide_number": current_slide_number
+                "slide_number": current_slide_number,
+                "is_duplicate": False
             })
             current_slide_number += 1
     
