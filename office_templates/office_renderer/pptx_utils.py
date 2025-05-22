@@ -2,88 +2,77 @@
 Utility functions for PPTX manipulation.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
 from copy import deepcopy
-from pptx import Presentation
+
+if TYPE_CHECKING:
+    from pptx.presentation import Presentation
+    from pptx.slide import Slide
+    from pptx.shapes.base import BaseShape
 
 
-def duplicate_slide(pres, index):
+def duplicate_slide(
+    pres: Presentation,
+    slide: Slide,
+    index: Optional[int] = None,
+) -> Slide:
     """
-    Create a duplicate of the slide at the given index and return the new slide.
-    
+    Create a duplicate of the given slide and return the new slide.
+
     This function duplicates a slide by:
     1. Getting the source slide
     2. Creating a new blank slide
     3. Copying all shapes from source to destination
-    
+
     Args:
         pres: The Presentation object
-        index: Index of the slide to duplicate
-        
+        slide: The slide object to duplicate
+
     Returns:
         The newly created slide object
     """
-    source = pres.slides[index]
-    blank_slide_layout = pres.slide_layouts[6]  # typically a blank layout
-    new_slide = pres.slides.add_slide(blank_slide_layout)
+    # (1) Create new slide (always appended to the end for now)
+    new_slide = pres.slides.add_slide(slide.slide_layout)
 
-    for shape in source.shapes:
-        el = shape.element
-        new_el = deepcopy(el)
-        new_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
+    #  (2) Calculate where the duplicate should live
+    sld_ids = pres.slides._sldIdLst
+    src_idx = pres.slides.index(slide)  # position of original
+    dest_idx = (
+        len(sld_ids) + index
+        if index is not None and index < 0  # negative slice logic
+        else index if index is not None else src_idx + 1
+    )
+    dest_idx = max(0, min(dest_idx, len(sld_ids) - 1))  # clamp to bounds
+
+    # (3) Move the slide-id element to that position
+    new_sld_id = sld_ids[-1]  # id for slide we just appended
+    sld_ids.remove(new_sld_id)
+    sld_ids.insert(dest_idx, new_sld_id)
+    # Delete all the shapes in the new slide
+    for shape in new_slide.shapes:
+        remove_shape(shape)
+
+    # Deep-copy all shapes from the source slide to the new slide
+    for shape in slide.shapes:
+        new_el = deepcopy(shape.element)
+        new_slide.shapes._spTree.insert_element_before(new_el, "p:extLst")
 
     return new_slide
 
 
-def remove_shape(slide, shape):
+def remove_shape(shape: BaseShape):
     """
     Remove a shape from a slide.
-    
+
     This function removes a shape by removing its XML element from the slide's shape tree.
-    
+
     Args:
         slide: The slide object containing the shape
         shape: The shape object to remove
     """
-    try:
-        parent = shape.element.getparent()
-        if parent is not None:
-            parent.remove(shape.element)
-    except Exception as e:
-        print(f"Error removing shape: {e}")
-        # Continue execution even if shape removal fails
-
-
-def create_new_presentation_from_slides(slides_to_include):
-    """
-    Create a new presentation containing only the specified slides.
-    
-    Args:
-        slides_to_include: List of slide objects to include in the new presentation
-        
-    Returns:
-        A new Presentation object with only the specified slides
-    """
-    if not slides_to_include:
-        return None
-    
-    # Create new presentation
-    new_prs = Presentation()
-    
-    # Copy master slides and layouts from first presentation
-    # Note: This is simplified - complete implementation would need to handle masters and layouts
-    
-    # Add each slide to the new presentation
-    for slide in slides_to_include:
-        # Get layout from original slide
-        layout = slide.slide_layout
-        
-        # Add new slide with same layout
-        new_slide = new_prs.slides.add_slide(layout)
-        
-        # Copy all shapes from source to destination
-        for shape in slide.shapes:
-            el = shape.element
-            new_el = deepcopy(el)
-            new_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
-    
-    return new_prs
+    parent = shape.element.getparent()
+    if parent is not None:
+        parent.remove(shape.element)

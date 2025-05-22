@@ -20,6 +20,8 @@ def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:
         - simple_fields: keys without square brackets or periods in the placeholder
         - object_fields: keys where the placeholder includes a square bracket or period
     """
+    KEYS_TO_IGNORE = {"now", "loop_count", "loop_number"}
+
     simple_fields = set()
     object_fields = set()
     placeholders = PLACEHOLDER_PATTERN.findall(text)
@@ -29,7 +31,7 @@ def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:
             m = re.match(r"([^\.\[\]\|]+)", ph)
             if m:
                 key = m.group(1).strip()
-                if key == "now":
+                if key in KEYS_TO_IGNORE:
                     continue
                 if ("." in ph) or ("[" in ph):
                     object_fields.add(key)
