@@ -58,9 +58,13 @@ class TestTemplatingNormalMode(unittest.TestCase):
     def setUp(self):
         # Create a dummy cohort, users, and program context.
         self.cohort = DummyCohort("Cohort A")
-        self.user1 = DummyUser("Alice", "alice-three@example.com", is_active=True, friend_count=2)
+        self.user1 = DummyUser(
+            "Alice", "alice-three@example.com", is_active=True, friend_count=2
+        )
         self.user2 = DummyUser("Bob", "bob@example.com", is_active=True, friend_count=0)
-        self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True, friend_count=1)
+        self.django_user = DummyDjangoUser(
+            "DenyUser", "deny@example.com", is_active=True, friend_count=1
+        )
         # program.users as a list (simulate queryset already converted to a list)
         self.program = {
             "users": [self.user1, self.user2, self.django_user],
@@ -75,7 +79,6 @@ class TestTemplatingNormalMode(unittest.TestCase):
         # Use a dummy request user that denies permission on any object whose name contains "deny".
         self.request_user = DummyRequestUser()
 
-    # Normal mode tests.
     @patch("template_reports.templating.resolve.datetime.datetime")
     def test_pure_now_formatting_normal(self, mock_dt):
         # Patch datetime.datetime.now in the parser module to always return self.now.
@@ -132,7 +135,22 @@ class TestTemplatingNormalMode(unittest.TestCase):
         expected2 = self.now.strftime("%B %d, %Y")
         self.assertEqual(result2, expected2)
 
-    def test_mixed_text_normal(self):
+    def test_mixed_text_multiple(self):
+        # Mixed text with multiple placeholders.
+        tpl = "The program is: {{ program.name }}. The user is: {{ user.name }}."
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        # Expected: "The program is: Test Program. Users: alice-three@example.com, bob@example.com, deny@example.com are active."
+        expected = (
+            f"The program is: {self.program['name']}. The user is: {self.user1.name}."
+        )
+        self.assertEqual(result, expected)
+
+    def test_mixed_text_list(self):
         # Mixed text with a placeholder that resolves to a list should join the list.
         tpl = "All emails: {{ program.users.email }} are active."
         result = process_text(
@@ -145,6 +163,18 @@ class TestTemplatingNormalMode(unittest.TestCase):
         expected = (
             f"All emails: {', '.join(u.email for u in self.program['users'])} are active."
         )
+        self.assertEqual(result, expected)
+
+    def test_mixed_text_list_multiple(self):
+        # Mixed text with a list placeholder AND another.
+        tpl = "All emails: {{ program.users.email }}. User is: {{ user.name }}."
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        expected = f"All emails: {', '.join(u.email for u in self.program['users'])}. User is: {self.user1.name}."
         self.assertEqual(result, expected)
 
     def test_permission_denied_in_normal(self):
