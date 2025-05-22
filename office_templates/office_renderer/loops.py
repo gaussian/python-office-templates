@@ -12,7 +12,7 @@ from .constants import (
     LOOP_START_PATTERN_STR,
     LOOP_END_PATTERN_STR,
 )
-from .pptx_utils import duplicate_slide
+from .pptx_utils import duplicate_slide, remove_shape
 
 if TYPE_CHECKING:
     from pptx.presentation import Presentation
@@ -117,7 +117,9 @@ def process_loops(prs: Presentation, context, perm_user, errors):
         for shape in slide.shapes:
             # Check for loop start
             if is_loop_start(shape):
+                # Store the shape, but delete it from the slide
                 loop_start_shapes.append(shape)
+                remove_shape(shape)
 
                 # Quit if multiple loop start directives on the same slide
                 if len(loop_start_shapes) > 1:
@@ -144,7 +146,9 @@ def process_loops(prs: Presentation, context, perm_user, errors):
 
             # Check for loop end
             if is_loop_end(shape):
+                # Store the shape, but delete it from the slide
                 loop_end_shapes.append(shape)
+                remove_shape(shape)
 
                 # Quit if multiple loop end directives on the same slide
                 if len(loop_end_shapes) > 1:
