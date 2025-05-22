@@ -118,6 +118,15 @@ def process_loops(prs: Presentation, context, perm_user, errors):
             # Check for loop start
             if is_loop_start(shape):
                 loop_start_shapes.append(shape)
+
+                # Quit if multiple loop start directives on the same slide
+                if len(loop_start_shapes) > 1:
+                    errors.append(
+                        f"Error on slide {i + 1}: Multiple loop start directives on same slide"
+                    )
+                    return []
+
+                # Get the loop variable and collection data
                 loop_variable_name, collection_tag = extract_loop_directive(
                     shape.text_frame.text
                 )
@@ -127,7 +136,7 @@ def process_loops(prs: Presentation, context, perm_user, errors):
                         collection_tag, context, perm_user
                     )
                     if error:
-                        errors.append(error)
+                        errors.append(f"Error on slide {i + 1}: {error}")
                         return []
                 else:
                     errors.append(f"Error on slide {i + 1}: Invalid loop start directive")
@@ -136,25 +145,19 @@ def process_loops(prs: Presentation, context, perm_user, errors):
             # Check for loop end
             if is_loop_end(shape):
                 loop_end_shapes.append(shape)
+
+                # Quit if multiple loop end directives on the same slide
+                if len(loop_end_shapes) > 1:
+                    errors.append(
+                        f"Error on slide {i + 1}: Multiple loop end directives on same slide"
+                    )
+                    return []
+
                 if not in_loop and not has_loop_start:
                     errors.append(
                         f"Error on slide {i + 1}: %endloop% without a matching loop start"
                     )
                 has_loop_end = True
-
-        # Quit if multiple loop start directives on the same slide
-        if len(loop_start_shapes) > 1:
-            errors.append(
-                f"Error on slide {i + 1}: Multiple loop start directives on same slide"
-            )
-            return []
-
-        # Quit if multiple loop end directives on the same slide
-        if len(loop_end_shapes) > 1:
-            errors.append(
-                f"Error on slide {i + 1}: Multiple loop end directives on same slide"
-            )
-            return []
 
         # Handle loop start
         if has_loop_start:
