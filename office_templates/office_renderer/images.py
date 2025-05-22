@@ -7,13 +7,8 @@ from openpyxl.drawing.image import Image as XLImage
 from PIL import Image as PILImage
 
 from ..templating import process_text
+from .constants import IMAGE_DIRECTIVES
 from .exceptions import ImageError
-
-
-IMAGE_DIRECTIVES = {
-    "%image%": "fit",
-    "%imagesqueeze%": "squeeze",
-}
 
 
 def extract_image_directive(text: str | None) -> tuple[str | None, str | None]:
