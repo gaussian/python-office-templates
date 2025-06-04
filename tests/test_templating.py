@@ -385,6 +385,17 @@ class TestTemplatingNormalMode(unittest.TestCase):
         )
         self.assertEqual(result, "HELLO WORLD")
 
+    def test_length_formatting(self):
+        self.context["value"] = "hello world"
+        tpl = "{{ value | length }}"
+        result = process_text(
+            tpl,
+            self.context,
+            perm_user=None,
+            mode="normal",
+        )
+        self.assertEqual(result, "11")
+
     def test_string_lower_formatting(self):
         self.context["value"] = "Hello World"
         tpl = "{{ value | lower }}"
