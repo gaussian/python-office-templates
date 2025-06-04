@@ -9,9 +9,16 @@ def process_worksheet(worksheet, context: dict, perm_user=None):
     Process a worksheet, replacing placeholders with values from the context.
     When a placeholder resolves to a list, it expands into multiple rows in the column.
     """
+    # Convert perm_user to check_permissions lambda
+    from template_reports.templating.permissions import has_view_permission
+    if perm_user is not None:
+        check_permissions = lambda obj: has_view_permission(obj, perm_user)
+    else:
+        check_permissions = None
+
     process_kwargs = {
         "context": context,
-        "perm_user": perm_user,
+        "check_permissions": check_permissions,
         "as_float": True,
         "fail_if_not_float": False,
         "fail_if_empty": False,
