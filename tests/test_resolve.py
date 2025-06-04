@@ -153,7 +153,10 @@ class TestParser(unittest.TestCase):
         req_user = RequestUser()
 
         expr = "container.users[is_active=True, name=Allow]"
-        resolved = resolve_formatted_tag(expr, context, perm_user=req_user)
+        # Create check_permissions lambda
+        from template_reports.templating.permissions import has_view_permission
+        check_permissions = lambda obj: has_view_permission(obj, req_user)
+        resolved = resolve_formatted_tag(expr, context, check_permissions=check_permissions)
         self.assertEqual(resolved, [users[0]])
 
     def test_empty_expression(self):

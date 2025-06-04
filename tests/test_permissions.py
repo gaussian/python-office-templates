@@ -58,37 +58,49 @@ class TestPermissions(unittest.TestCase):
         self.assertFalse(has_view_permission(self.django_allowed, None))
 
     def test_enforce_permissions_single_value(self):
+        # Create check_permissions lambda
+        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        
         # For a non-Django object, value is returned unchanged.
         val = "test value"
-        res = enforce_permissions(val, self.request_user, True)
+        res = enforce_permissions(val, check_permissions, True)
         self.assertEqual(res, val)
 
         # For allowed Django-like object.
-        res_allowed = enforce_permissions(self.django_allowed, self.request_user, True)
+        res_allowed = enforce_permissions(self.django_allowed, check_permissions, True)
         self.assertEqual(res_allowed, self.django_allowed)
 
         # For denied Django-like object, expect an exception instead of empty string.
         with self.assertRaises(PermissionDeniedException):
-            enforce_permissions(self.django_denied, self.request_user, True)
+            enforce_permissions(self.django_denied, check_permissions, True)
 
     def test_enforce_permissions_list(self):
+        # Create check_permissions lambda
+        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        
         # Test on a list containing an allowed object and a denied object.
         values = [self.django_allowed, self.django_denied, self.non_django]
         with self.assertRaises(PermissionDeniedException):
-            enforce_permissions(values, self.request_user, True)
+            enforce_permissions(values, check_permissions, True)
 
     def test_enforce_permissions_single_value_exception(self):
+        # Create check_permissions lambda
+        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        
         # When permission is denied and raise_exception is True.
         with self.assertRaises(PermissionDeniedException):
             enforce_permissions(
                 self.django_denied,
-                self.request_user,
+                check_permissions,
             )
 
     def test_enforce_permissions_list_exception(self):
+        # Create check_permissions lambda
+        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        
         values = [self.django_allowed, self.django_denied, self.non_django]
         with self.assertRaises(PermissionDeniedException):
-            enforce_permissions(values, self.request_user)
+            enforce_permissions(values, check_permissions)
 
 
 if __name__ == "__main__":

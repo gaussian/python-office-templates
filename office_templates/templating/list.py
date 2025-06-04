@@ -1,3 +1,4 @@
+from typing import Callable, Optional
 from .core import get_matching_tags, process_text
 from .exceptions import BadFloatDataResultError
 
@@ -5,7 +6,7 @@ from .exceptions import BadFloatDataResultError
 def process_text_list(
     items: list,
     context: dict,
-    perm_user,
+    check_permissions: Optional[Callable[[object], bool]],
     as_float: bool,
     fail_if_not_float: bool = False,
     fail_if_empty: bool = False,
@@ -20,7 +21,7 @@ def process_text_list(
             text=str(t),
             mode=m,
             context=context,
-            perm_user=perm_user,
+            check_permissions=check_permissions,
             fail_if_empty=fail_if_empty,
         )
 

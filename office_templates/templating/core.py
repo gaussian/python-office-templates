@@ -10,6 +10,7 @@ Permission checking is enforced during parsing.
 """
 
 import re
+from typing import Callable, Optional
 
 from .exceptions import BadTemplateModeError, EmptyDataException
 from .resolve import resolve_formatted_tag
@@ -23,7 +24,7 @@ def get_matching_tags(text: str):
 def process_text(
     text: str,
     context: dict,
-    perm_user=None,
+    check_permissions: Optional[Callable[[object], bool]] = None,
     mode: str = "normal",
     delimiter: str = ", ",
     fail_if_empty: bool = False,
@@ -68,7 +69,7 @@ def process_text(
         value = resolve_formatted_tag(
             expr=raw_expr,
             context=context,
-            perm_user=perm_user,
+            check_permissions=check_permissions,
         )
 
         # If the value is empty and fail_if_empty is set, raise an error.
@@ -108,19 +109,19 @@ def process_text(
 def process_text_recursive(
     obj,
     context: dict,
-    perm_user=None,
+    check_permissions: Optional[Callable[[object], bool]] = None,
     mode: str = "normal",
     delimiter: str = ", ",
     fail_if_empty: bool = False,
 ):
 
     if isinstance(obj, str):
-        return process_text(obj, context, perm_user, mode, delimiter, fail_if_empty)
+        return process_text(obj, context, check_permissions, mode, delimiter, fail_if_empty)
 
     elif isinstance(obj, list):
         return [
             process_text_recursive(
-                item, context, perm_user, mode, delimiter, fail_if_empty
+                item, context, check_permissions, mode, delimiter, fail_if_empty
             )
             for item in obj
         ]
@@ -128,7 +129,7 @@ def process_text_recursive(
     elif isinstance(obj, dict):
         return {
             key: process_text_recursive(
-                value, context, perm_user, mode, delimiter, fail_if_empty
+                value, context, check_permissions, mode, delimiter, fail_if_empty
             )
             for key, value in obj.items()
         }
