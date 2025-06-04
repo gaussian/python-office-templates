@@ -1,6 +1,7 @@
 from pptx import Presentation
 from .utils import remove_shape
 from .loops import is_loop_start, is_loop_end
+from ..exceptions import LayoutError
 
 
 def build_layout_mapping(
@@ -40,7 +41,7 @@ def build_layout_mapping(
                 tagged_layouts = get_tagged_layouts(prs)
                 for layout_id, slide in tagged_layouts.items():
                     layout_mapping[layout_id] = (prs, slide)
-            except ValueError as e:
+            except LayoutError as e:
                 # Re-raise validation errors to let the caller handle them
                 raise e
 
@@ -87,19 +88,19 @@ def get_tagged_layouts(prs):
                     if layout_id is None:
                         layout_id = match.group(1)
                     elif layout_id != match.group(1):
-                        raise ValueError(
+                        raise LayoutError(
                             f"Multiple different layout IDs found on same slide: '{layout_id}' and '{match.group(1)}'"
                         )
 
         # Validate: only one %layout% shape per slide
         if len(layout_shapes) > 1:
-            raise ValueError(f"Multiple %layout% shapes found on same slide")
+            raise LayoutError(f"Multiple %layout% shapes found on same slide")
 
         # If we found a layout, validate no loop directives on this slide
         if layout_id is not None:
             for shape in slide.shapes:
                 if is_loop_start(shape) or is_loop_end(shape):
-                    raise ValueError(
+                    raise LayoutError(
                         f"Slide with %layout% cannot contain %loop% or %endloop% directives"
                     )
 
