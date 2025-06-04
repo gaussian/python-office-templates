@@ -67,9 +67,16 @@ def get_collection_from_collection_tag(
     Given a collection tag, resolve it to a collection in the context.
     This function is a placeholder and should be implemented based on your context resolution logic.
     """
+    # Convert perm_user to check_permissions lambda
+    from template_reports.templating.permissions import has_view_permission
+    if perm_user is not None:
+        check_permissions = lambda obj: has_view_permission(obj, perm_user)
+    else:
+        check_permissions = None
+        
     # Get the collection from the context using resolve_tag
     try:
-        collection = resolve_tag(collection_tag, context, perm_user)
+        collection = resolve_tag(collection_tag, context, check_permissions=check_permissions)
     except Exception as e:
         return (
             None,
