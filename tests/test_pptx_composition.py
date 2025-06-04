@@ -31,6 +31,8 @@ class TestPPTXComposition(unittest.TestCase):
             "user": DummyUser("Alice", "alice@example.com"),
             "title": "Test Presentation",
             "content": "This is test content",
+            "chart_title": "Sales Performance Chart",
+            "product_summary": "Product performance overview",
         }
 
     def tearDown(self):
@@ -50,8 +52,17 @@ class TestPPTXComposition(unittest.TestCase):
         # Add a slide with content (for tagged layouts test)
         slide2 = prs.slides.add_slide(prs.slide_layouts[1])  # Title and Content
         slide2.shapes.title.text = "Content Slide"
-        text_box = slide2.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(1))
-        text_box.text_frame.text = "% layout content %"
+        
+        # Add %layout% tag in its own shape
+        layout_box = slide2.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(0.5))
+        layout_box.text_frame.text = "% layout content %"
+        
+        # Add template variables in separate shapes
+        chart_title_box = slide2.shapes.add_textbox(Inches(1), Inches(3), Inches(4), Inches(0.5))
+        chart_title_box.text_frame.text = "{{ chart_title }}"
+        
+        product_summary_box = slide2.shapes.add_textbox(Inches(1), Inches(4), Inches(4), Inches(0.5))
+        product_summary_box.text_frame.text = "{{ product_summary }}"
 
         # Save to temp file
         temp_file = tempfile.mktemp(suffix=".pptx")
@@ -65,8 +76,17 @@ class TestPPTXComposition(unittest.TestCase):
 
         # Add a slide for tagged layout
         slide1 = prs.slides.add_slide(prs.slide_layouts[5])  # Blank
-        text_box = slide1.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
-        text_box.text_frame.text = "% layout special %"
+        
+        # Add %layout% tag in its own shape
+        layout_box = slide1.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(0.5))
+        layout_box.text_frame.text = "% layout special %"
+        
+        # Add template variables in separate shapes
+        title_box = slide1.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(0.5))
+        title_box.text_frame.text = "{{ title }}"
+        
+        content_box = slide1.shapes.add_textbox(Inches(1), Inches(3), Inches(4), Inches(0.5))
+        content_box.text_frame.text = "{{ content }}"
 
         # Add another slide with title for title layouts
         slide2 = prs.slides.add_slide(prs.slide_layouts[0])  # Title slide
@@ -130,6 +150,17 @@ class TestPPTXComposition(unittest.TestCase):
         self.assertTrue(os.path.exists(output_file))
         prs = Presentation(output_file)
         self.assertEqual(len(prs.slides), 2)
+
+        # Verify that %layout% shapes are removed from output slides
+        for slide in prs.slides:
+            layout_shapes = []
+            for shape in slide.shapes:
+                if hasattr(shape, 'text_frame') and hasattr(shape.text_frame, 'text'):
+                    text = shape.text_frame.text.strip()
+                    if "% layout" in text and "%" in text:
+                        layout_shapes.append(shape)
+            self.assertEqual(len(layout_shapes), 0, 
+                           f"Found %layout% shapes in output slide: {[s.text_frame.text for s in layout_shapes]}")
 
     def test_compose_with_title_layouts(self):
         """Test composition using slide titles as layout IDs."""
@@ -240,6 +271,79 @@ class TestPPTXComposition(unittest.TestCase):
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
         self.assertTrue(any("No slides specified" in error for error in errors))
+
+    def test_multiple_layout_shapes_error(self):
+        """Test error handling when multiple %layout% shapes exist on same slide."""
+        # Create a problematic template with multiple %layout% shapes
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[5])  # Blank
+        
+        # Add two %layout% shapes with different IDs
+        layout_box1 = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(0.5))
+        layout_box1.text_frame.text = "% layout test1 %"
+        
+        layout_box2 = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(0.5))
+        layout_box2.text_frame.text = "% layout test2 %"
+        
+        # Save the problematic template
+        temp_file = tempfile.mktemp(suffix=".pptx")
+        prs.save(temp_file)
+        self.temp_files.append(temp_file)
+        
+        # Try to use this template - should fail
+        slide_specs = [{"layout": "test1"}]
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+        
+        result, errors = compose_pptx(
+            template_files=[temp_file],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+            use_tagged_layouts=True,
+        )
+        
+        # Should fail with errors
+        self.assertIsNone(result)
+        self.assertIsNotNone(errors)
+        self.assertTrue(any("Multiple different layout IDs" in error for error in errors))
+
+    def test_layout_with_loop_error(self):
+        """Test error handling when %layout% and %loop% exist on same slide."""
+        # Create a problematic template with both %layout% and %loop%
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[5])  # Blank
+        
+        # Add %layout% shape
+        layout_box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(0.5))
+        layout_box.text_frame.text = "% layout test_layout %"
+        
+        # Add %loop% shape
+        loop_box = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(4), Inches(0.5))
+        loop_box.text_frame.text = "% loop item in items %"
+        
+        # Save the problematic template
+        temp_file = tempfile.mktemp(suffix=".pptx")
+        prs.save(temp_file)
+        self.temp_files.append(temp_file)
+        
+        # Try to use this template - should fail
+        slide_specs = [{"layout": "test_layout"}]
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+        
+        result, errors = compose_pptx(
+            template_files=[temp_file],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+            use_tagged_layouts=True,
+        )
+        
+        # Should fail with errors
+        self.assertIsNone(result)
+        self.assertIsNotNone(errors)
+        self.assertTrue(any("cannot contain %loop%" in error for error in errors))
 
 
 if __name__ == "__main__":
