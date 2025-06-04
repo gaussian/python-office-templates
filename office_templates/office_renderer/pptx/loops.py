@@ -93,7 +93,7 @@ def get_collection_from_collection_tag(
     return collection, None
 
 
-def process_loops(prs: Presentation, context, perm_user, errors):
+def process_loops(prs: Presentation, context: dict, perm_user, errors: list[str]):
     """
     Process loops in the presentation:
     - Identify loop sections (slides between %loop var in collection% and %endloop%)
@@ -306,3 +306,24 @@ def process_loops(prs: Presentation, context, perm_user, errors):
                     current_slide_number += 1
 
     return slides_to_process
+
+
+def clear_loop_directives(prs):
+    """
+    Clear the text of all shapes that contain loop directives.
+
+    Args:
+        prs: The Presentation object
+    """
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
+                text = shape.text_frame.text.strip()
+                if LOOP_START_PATTERN.search(text) or LOOP_END_PATTERN.search(text):
+                    # Clear text at paragraph level to handle formatting
+                    for paragraph in shape.text_frame.paragraphs:
+                        if paragraph.runs:
+                            for run in paragraph.runs:
+                                run.text = ""
+                        else:
+                            paragraph.text = ""

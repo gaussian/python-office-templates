@@ -13,31 +13,8 @@ from .loops import (
     is_loop_end,
     is_loop_start,
     process_loops,
-    LOOP_START_PATTERN,
-    LOOP_END_PATTERN,
 )
 from .slide_utils import remove_shape
-
-
-def clear_loop_directives(prs):
-    """
-    Clear the text of all shapes that contain loop directives.
-
-    Args:
-        prs: The Presentation object
-    """
-    for slide in prs.slides:
-        for shape in slide.shapes:
-            if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
-                text = shape.text_frame.text.strip()
-                if LOOP_START_PATTERN.search(text) or LOOP_END_PATTERN.search(text):
-                    # Clear text at paragraph level to handle formatting
-                    for paragraph in shape.text_frame.paragraphs:
-                        if paragraph.runs:
-                            for run in paragraph.runs:
-                                run.text = ""
-                        else:
-                            paragraph.text = ""
 
 
 def render_pptx(template, context: dict, output, perm_user):
@@ -52,7 +29,7 @@ def render_pptx(template, context: dict, output, perm_user):
         template.seek(0)
         prs = Presentation(template)
 
-    errors = []
+    errors: list[str] = []
 
     # Process loops first - identify loop sections and duplicate slides
     slides_to_process = process_loops(prs, context, perm_user, errors)
@@ -96,16 +73,16 @@ def render_pptx(template, context: dict, output, perm_user):
 
 def process_single_slide(
     slide,
-    context,
+    context: dict,
     slide_number,
     perm_user,
-    errors,
+    errors: list[str],
     placeholders=None,
 ):
     """Process a single slide with the given context and placeholders."""
     # Handle placeholders first if provided
     if placeholders:
-        _process_placeholders(
+        process_placeholders(
             slide, placeholders, context, slide_number, perm_user, errors
         )
 
@@ -119,13 +96,13 @@ def process_single_slide(
         process_shape_content(shape, slide, context, slide_number, perm_user, errors)
 
 
-def _process_placeholders(
+def process_placeholders(
     slide,
-    placeholders,
-    context,
-    slide_number,
+    placeholders: list[str],
+    context: dict,
+    slide_number: int,
     perm_user,
-    errors,
+    errors: list[str],
 ):
     """Process placeholder shapes on a slide."""
 
@@ -154,7 +131,14 @@ def _process_placeholders(
                 )
 
 
-def process_shape_content(shape, slide, context, slide_number, perm_user, errors):
+def process_shape_content(
+    shape,
+    slide,
+    context: dict,
+    slide_number: int,
+    perm_user,
+    errors: list[str],
+):
     """Process the content of a shape based on its type."""
     # 1) Check if this shape should be replaced with an image.
     if should_replace_shape_with_image(shape):
