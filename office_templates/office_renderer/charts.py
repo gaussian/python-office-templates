@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pptx.chart.chart import Chart
 
 
-def process_chart(chart: Chart, context: dict, perm_user):
+def process_chart(chart: Chart, context: dict, check_permissions):
     """
     Read the current chart data, format text fields using the provided context,
     then update the chart with the new data.
@@ -23,14 +23,8 @@ def process_chart(chart: Chart, context: dict, perm_user):
     Parameters:
         chart: a pptx.chart.chart.Chart object.
         context: a dict used for formatting placeholders in text values.
-        perm_user: passed along for consistency (not used in this example).
+        check_permissions: function to check permissions for objects.
     """
-    # Convert perm_user to check_permissions lambda
-    from template_reports.templating.permissions import has_view_permission
-    if perm_user is not None:
-        check_permissions = lambda obj: has_view_permission(obj, perm_user)
-    else:
-        check_permissions = None
 
     # Common kwargs
     process_kwargs = dict(

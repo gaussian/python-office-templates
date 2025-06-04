@@ -6,6 +6,7 @@ from pptx import Presentation
 from pptx.util import Inches
 
 from template_reports.office_renderer import render_pptx
+from template_reports.templating.permissions import has_view_permission
 
 
 # Dummy objects for testing renderer behavior.
@@ -67,7 +68,7 @@ class TestRendererUnit(unittest.TestCase):
             self.temp_input,
             self.context,
             self.temp_output,
-            perm_user=None,
+            None,
         )
         # Load output and check text from slide[0], shape[0].
         prs_out = Presentation(rendered)
@@ -86,7 +87,7 @@ class TestRendererUnit(unittest.TestCase):
             self.temp_input,
             self.context,
             self.temp_output,
-            perm_user=None,
+            None,
         )
         prs_out = Presentation(rendered)
         shape = prs_out.slides[0].shapes[self.shape_index]
@@ -98,11 +99,12 @@ class TestRendererUnit(unittest.TestCase):
         # Retrieve entire user (Django-like object), forcing permission denial:
         self.textframe.paragraphs[0].text = "{{ user }}"
         self.prs.save(self.temp_input)
+        check_permissions = lambda obj: has_view_permission(obj, self.request_user)
         _, errors = render_pptx(
             self.temp_input,
             self.context,
             self.temp_output,
-            perm_user=self.request_user,
+            check_permissions,
         )
         self.assertTrue(len(errors) == 1)
 

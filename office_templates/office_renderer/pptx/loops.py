@@ -61,18 +61,12 @@ def is_loop_end(shape) -> bool:
 def get_collection_from_collection_tag(
     collection_tag: str,
     context: dict,
-    perm_user,
+    check_permissions,
 ) -> tuple[Optional[Iterable[Any]], Optional[str]]:
     """
     Given a collection tag, resolve it to a collection in the context.
     This function is a placeholder and should be implemented based on your context resolution logic.
     """
-    # Convert perm_user to check_permissions lambda
-    from template_reports.templating.permissions import has_view_permission
-    if perm_user is not None:
-        check_permissions = lambda obj: has_view_permission(obj, perm_user)
-    else:
-        check_permissions = None
         
     # Get the collection from the context using resolve_tag
     try:
@@ -100,7 +94,7 @@ def get_collection_from_collection_tag(
     return collection, None
 
 
-def process_loops(prs: Presentation, context: dict, perm_user, errors: list[str]):
+def process_loops(prs: Presentation, context: dict, check_permissions, errors: list[str]):
     """
     Process loops in the presentation:
     - Identify loop sections (slides between %loop var in collection% and %endloop%)
@@ -143,7 +137,7 @@ def process_loops(prs: Presentation, context: dict, perm_user, errors: list[str]
                 if loop_variable_name and collection_tag:
                     has_loop_start = True
                     loop_collection, error = get_collection_from_collection_tag(
-                        collection_tag, context, perm_user
+                        collection_tag, context, check_permissions
                     )
                     if error:
                         errors.append(f"Error on slide {i + 1}: {error}")

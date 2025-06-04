@@ -44,17 +44,11 @@ def merge_split_placeholders(paragraph):
     return paragraph
 
 
-def process_paragraph(paragraph, context, perm_user, mode="normal"):
+def process_paragraph(paragraph, context, check_permissions, mode="normal"):
     """
     Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
     Then process each run's text with process_text.
     """
-    # Convert perm_user to check_permissions lambda
-    from template_reports.templating.permissions import has_view_permission
-    if perm_user is not None:
-        check_permissions = lambda obj: has_view_permission(obj, perm_user)
-    else:
-        check_permissions = None
     
     # Use the helper to merge runs containing split placeholders.
     paragraph = merge_split_placeholders(paragraph)

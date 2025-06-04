@@ -17,7 +17,7 @@ from .loops import (
 from .utils import remove_shape
 
 
-def render_pptx(template, context: dict, output, perm_user):
+def render_pptx(template, context: dict, output, check_permissions):
     """
     Render the PPTX template (a path string or a file-like object) using the provided context and save to output.
     'output' can be a path string or a file-like object. If it's a file-like object, it will be rewound after saving.
@@ -32,7 +32,7 @@ def render_pptx(template, context: dict, output, perm_user):
     errors: list[str] = []
 
     # Process loops first - identify loop sections and duplicate slides
-    slides_to_process = process_loops(prs, context, perm_user, errors)
+    slides_to_process = process_loops(prs, context, check_permissions, errors)
 
     # Process all slides including duplicated ones from loops
     for slide_info in slides_to_process:
@@ -52,7 +52,7 @@ def render_pptx(template, context: dict, output, perm_user):
             slide_context[slide_info["loop_var"]] = slide_info["loop_item"]
 
         # Process the slide
-        process_single_slide(slide, slide_context, slide_number, perm_user, errors)
+        process_single_slide(slide, slide_context, slide_number, check_permissions, errors)
 
     if errors:
         print("Rendering aborted due to the following errors:")
@@ -75,7 +75,7 @@ def process_single_slide(
     slide,
     context: dict,
     slide_number,
-    perm_user,
+    check_permissions,
     errors: list[str],
 ):
     """Process a single slide with the given context."""
@@ -86,7 +86,7 @@ def process_single_slide(
             continue
 
         # Process the shape content
-        process_shape_content(shape, slide, context, slide_number, perm_user, errors)
+        process_shape_content(shape, slide, context, slide_number, check_permissions, errors)
 
 
 def process_shape_content(
@@ -94,7 +94,7 @@ def process_shape_content(
     slide,
     context: dict,
     slide_number: int,
-    perm_user,
+    check_permissions,
     errors: list[str],
 ):
     """Process the content of a shape based on its type."""
@@ -105,7 +105,7 @@ def process_shape_content(
                 shape,
                 slide,
                 context=context,
-                perm_user=perm_user,
+                check_permissions=check_permissions,
             )
         except Exception as e:
             errors.append(f"Error processing image (slide {slide_number}): {e}")
@@ -125,7 +125,7 @@ def process_shape_content(
                 process_paragraph(
                     paragraph=paragraph,
                     context=context,
-                    perm_user=perm_user,
+                    check_permissions=check_permissions,
                     mode="normal",  # for text frames
                 )
             except Exception as e:
@@ -139,7 +139,7 @@ def process_shape_content(
                     process_table_cell(
                         cell=cell,
                         context=context,
-                        perm_user=perm_user,
+                        check_permissions=check_permissions,
                     )
                 except Exception as e:
                     errors.append(f"Error in table cell (slide {slide_number}): {e}")
@@ -150,7 +150,7 @@ def process_shape_content(
             process_chart(
                 chart=shape.chart,
                 context=context,
-                perm_user=perm_user,
+                check_permissions=check_permissions,
             )
         except Exception as e:
             errors.append(f"Error in chart (slide {slide_number}): {e}")

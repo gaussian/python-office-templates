@@ -50,17 +50,11 @@ def replace_shape_with_image(
     shape,
     slide,
     context: dict,
-    perm_user=None,
+    check_permissions=None,
     url: str | None = None,
     mode: str | None = None,
 ):
     """Replace *shape* with an image, keeping its position."""
-    # Convert perm_user to check_permissions lambda
-    from template_reports.templating.permissions import has_view_permission
-    if perm_user is not None:
-        check_permissions = lambda obj: has_view_permission(obj, perm_user)
-    else:
-        check_permissions = None
 
     if url is None or mode is None:
         if not hasattr(shape, "text_frame"):
@@ -117,17 +111,11 @@ def replace_cell_with_image(
     cell,
     worksheet,
     context: dict,
-    perm_user=None,
+    check_permissions=None,
     url: str | None = None,
     mode: str | None = None,
 ):
     """Replace the cell's value with an image anchored at the cell."""
-    # Convert perm_user to check_permissions lambda
-    from template_reports.templating.permissions import has_view_permission
-    if perm_user is not None:
-        check_permissions = lambda obj: has_view_permission(obj, perm_user)
-    else:
-        check_permissions = None
 
     if url is None or mode is None:
         url, mode = extract_image_directive(

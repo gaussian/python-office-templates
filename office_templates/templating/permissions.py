@@ -23,30 +23,18 @@ def has_view_permission(obj, perm_user):
     return True
 
 
-def _check_permissions(item, check_permissions: Callable[[object], bool]):
-    """
-    Check permission for a single item using the provided check_permissions function.
-    Returns a tuple (item, True) if the item passes the permission check.
-    Otherwise, raises PermissionDeniedException.
-    """
-    if not check_permissions(item):
-        msg = f"Permission denied on: {item}"
-        raise PermissionDeniedException(msg)
-    return (item, True)
-
-
 def enforce_permissions(
     value,
     check_permissions: Callable[[object], bool],
     raise_exception=True,
 ):
     """
-    Enforce permission checks on the resolved value by delegating per-item permission logic to _check_permissions.
+    Enforce permission checks on the resolved value.
 
     - If check_permissions is None, returns the value unmodified.
-    - For list values: iterates once, replaces any item failing _check_permissions (i.e. gets None) by filtering it out.
-      If any item fails, the first error message is already appended (via _check_permissions).
-    - For a single value: returns "" if _check_permissions returns None.
+    - For list values: iterates once, filters out any item failing permission check.
+      If any item fails, raises PermissionDeniedException.
+    - For a single value: returns "" if permission check fails, raises PermissionDeniedException otherwise.
     """
     if check_permissions is None:
         return value
@@ -55,16 +43,13 @@ def enforce_permissions(
     if isinstance(value, list):
         permitted = []
         for item in value:
-            res, success = _check_permissions(
-                item,
-                check_permissions,
-            )
-            if success:
-                permitted.append(res)
+            if not check_permissions(item):
+                msg = f"Permission denied on: {item}"
+                raise PermissionDeniedException(msg)
+            permitted.append(item)
         return permitted
     else:
-        res, success = _check_permissions(
-            value,
-            check_permissions,
-        )
-        return res if success else ""
+        if not check_permissions(value):
+            msg = f"Permission denied on: {value}"
+            raise PermissionDeniedException(msg)
+        return value
