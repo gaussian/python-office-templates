@@ -7,12 +7,13 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Iterable, Optional, Any
 
-from ..templating import resolve_tag
-from .constants import (
+from template_reports.templating import resolve_tag
+
+from ..constants import (
     LOOP_START_PATTERN_STR,
     LOOP_END_PATTERN_STR,
 )
-from .pptx_utils import duplicate_slide, remove_shape
+from .slide_utils import duplicate_slide, remove_shape
 
 if TYPE_CHECKING:
     from pptx.presentation import Presentation

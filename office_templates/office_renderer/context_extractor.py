@@ -3,7 +3,7 @@ from pptx import Presentation
 
 from .charts import get_raw_chart_data
 from .constants import LOOP_START_PATTERN_STR
-from .loops import extract_loop_directive
+from .pptx.loops import extract_loop_directive
 from .paragraphs import merge_split_placeholders
 
 # Pattern to match placeholders, e.g. "{{ some.placeholder }}"

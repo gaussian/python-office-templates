@@ -1,9 +1,9 @@
 import os
 import tempfile
 import unittest
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
-from template_reports.office_renderer.xlsx import render_xlsx
+from template_reports.office_renderer import render_xlsx
 
 
 class TestXlsxUnit(unittest.TestCase):
@@ -28,8 +28,8 @@ class TestXlsxUnit(unittest.TestCase):
             if os.path.exists(temp_file):
                 os.remove(temp_file)
 
-    @patch("template_reports.office_renderer.xlsx.get_load_workbook")
-    @patch("template_reports.office_renderer.xlsx.process_worksheet")
+    @patch("template_reports.office_renderer.xlsx.render.get_load_workbook")
+    @patch("template_reports.office_renderer.xlsx.render.process_worksheet")
     def test_render_xlsx_with_file_path(
         self, mock_process_worksheet, mock_get_load_workbook
     ):
@@ -87,8 +87,8 @@ class TestXlsxUnit(unittest.TestCase):
         self.assertEqual(result, self.temp_output)
         self.assertIsNone(errors)
 
-    @patch("template_reports.office_renderer.xlsx.get_load_workbook")
-    @patch("template_reports.office_renderer.xlsx.process_worksheet")
+    @patch("template_reports.office_renderer.xlsx.render.get_load_workbook")
+    @patch("template_reports.office_renderer.xlsx.render.process_worksheet")
     def test_render_xlsx_with_file_object(
         self, mock_process_worksheet, mock_get_load_workbook
     ):
@@ -132,8 +132,8 @@ class TestXlsxUnit(unittest.TestCase):
         self.assertEqual(result, mock_output_file)
         self.assertIsNone(errors)
 
-    @patch("template_reports.office_renderer.xlsx.get_load_workbook")
-    @patch("template_reports.office_renderer.xlsx.process_worksheet")
+    @patch("template_reports.office_renderer.xlsx.render.get_load_workbook")
+    @patch("template_reports.office_renderer.xlsx.render.process_worksheet")
     def test_render_xlsx_with_error(self, mock_process_worksheet, mock_get_load_workbook):
         """Test handling of errors during rendering."""
         # Set up mock workbook

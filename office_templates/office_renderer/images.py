@@ -45,6 +45,7 @@ def should_replace_cell_with_image(cell) -> bool:
     url, _ = extract_image_directive(cell.value)
     return url is not None
 
+
 def replace_shape_with_image(
     shape,
     slide,
@@ -62,7 +63,12 @@ def replace_shape_with_image(
     if not url:
         return
 
-    url = process_text(url, context=context, perm_user=perm_user, mode="normal")
+    url = process_text(
+        url,
+        context=context,
+        perm_user=perm_user,
+        mode="normal",
+    )
 
     try:
         with urlopen(url) as resp:
@@ -77,7 +83,9 @@ def replace_shape_with_image(
     rotation = getattr(shape, "rotation", 0)
 
     if mode == "squeeze":
-        pic = slide.shapes.add_picture(BytesIO(data), left, top, width=width, height=height)
+        pic = slide.shapes.add_picture(
+            BytesIO(data), left, top, width=width, height=height
+        )
     else:
         pic = slide.shapes.add_picture(BytesIO(data), left, top)
         with PILImage.open(BytesIO(data)) as pil_img:
@@ -110,11 +118,18 @@ def replace_cell_with_image(
     """Replace the cell's value with an image anchored at the cell."""
 
     if url is None or mode is None:
-        url, mode = extract_image_directive(cell.value if isinstance(cell.value, str) else None)
+        url, mode = extract_image_directive(
+            cell.value if isinstance(cell.value, str) else None
+        )
     if not url:
         return
 
-    url = process_text(url, context=context, perm_user=perm_user, mode="normal")
+    url = process_text(
+        url,
+        context=context,
+        perm_user=perm_user,
+        mode="normal",
+    )
 
     try:
         with urlopen(url) as resp:

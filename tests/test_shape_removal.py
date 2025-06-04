@@ -9,7 +9,7 @@ import unittest
 from pptx import Presentation
 from pptx.util import Inches
 
-from template_reports.office_renderer.pptx_utils import remove_shape
+from template_reports.office_renderer.pptx.slide_utils import remove_shape
 
 
 class TestShapeRemoval(unittest.TestCase):

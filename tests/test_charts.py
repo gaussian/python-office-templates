@@ -4,7 +4,6 @@ from pptx.chart.data import ChartData
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx import Presentation
 from pptx.util import Inches
-import sys
 
 from template_reports.office_renderer.charts import process_chart
 from template_reports.templating.exceptions import EmptyDataException
