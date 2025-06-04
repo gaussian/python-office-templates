@@ -39,7 +39,7 @@ def convert_date_format(custom_format):
     return custom_format
 
 
-def format_value(value, format_expr):
+def format_value(value: list | str, format_expr: str):
     """
     Formats a value using a custom format string.
 
@@ -59,11 +59,25 @@ def format_value(value, format_expr):
        .2f              # Formats number as '3.14'
        upper            # Converts string to uppercase
        lower            # Converts string to lowercase
+       length           # Gets the length of a string or list
        capitalize       # Converts string to uppercase (same as 'upper')
        title            # Converts string to title case (all word initials uppercase)
        %A               # Formats date as full weekday name, e.g., 'Monday'
        %I:%M %p         # Formats time as '01:30 PM'
     """
+
+    # Special case for 'length' format.
+    if format_expr == "length":
+        if not isinstance(value, (str, list)):
+            raise BadTagException(
+                f"Cannot apply 'length' format to non-string/list value: {value}"
+            )
+        return len(value)
+
+    # If the value is a list, we can format each item in the list.
+    if isinstance(value, list):
+        return [format_value(item, format_expr) for item in value]
+
     try:
         # Handle uppercase/lowercase.
         if format_expr in ("upper", "capitalize"):
@@ -83,8 +97,6 @@ def format_value(value, format_expr):
         raise BadTagException(
             f"Error formatting value '{value}' with format '{format_expr}': {str(e)}"
         )
-
-    return value
 
     # If the format string contains a comma, split it to retrieve multiple attributes.
     # elif "," in format_expr:

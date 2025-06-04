@@ -60,10 +60,10 @@ class TestPptxIntegrationLoops(unittest.TestCase):
             if os.path.exists(temp_file):
                 os.remove(temp_file)
 
-    @patch("template_reports.office_renderer.pptx.Presentation")
+    @patch("template_reports.office_renderer.pptx.render.Presentation")
     def test_process_loops_integration(self, mock_presentation):
         """Test the integration of loop processing with minimal mocking."""
-        from template_reports.office_renderer.loops import process_loops
+        from template_reports.office_renderer.pptx.loops import process_loops
 
         context = {"users": ["Alice", "Bob", "Charlie"]}
         errors = []
@@ -114,10 +114,10 @@ class TestPptxIntegrationLoops(unittest.TestCase):
 
         # Add a patch to detect loop directives during the test
         with patch(
-            "template_reports.office_renderer.loops.is_loop_start"
+            "template_reports.office_renderer.pptx.loops.is_loop_start"
         ) as mock_is_start:
             with patch(
-                "template_reports.office_renderer.loops.is_loop_end"
+                "template_reports.office_renderer.pptx.loops.is_loop_end"
             ) as mock_is_end:
                 # Configure mocks to return true only for specific slides
                 mock_is_start.side_effect = (
@@ -136,11 +136,11 @@ class TestPptxIntegrationLoops(unittest.TestCase):
                 # Check that there are no errors
                 self.assertEqual(len(errors), 0)
 
-    @patch("template_reports.office_renderer.pptx.Presentation")
+    @patch("template_reports.office_renderer.pptx.render.Presentation")
     def test_dot_notation_processing(self, mock_presentation):
         """Test dot notation processing with minimal mocking."""
         # Setup a simplified test focusing on dot notation
-        from template_reports.office_renderer.loops import process_loops, resolve_tag
+        from template_reports.office_renderer.pptx.loops import process_loops, resolve_tag
 
         # Prepare context with dot notation
         context = {"program": {"members": ["Alice", "Bob"]}}
@@ -194,10 +194,10 @@ class TestPptxIntegrationLoops(unittest.TestCase):
 
         # Add a patch to detect loop directives during the test
         with patch(
-            "template_reports.office_renderer.loops.is_loop_start"
+            "template_reports.office_renderer.pptx.loops.is_loop_start"
         ) as mock_is_start:
             with patch(
-                "template_reports.office_renderer.loops.is_loop_end"
+                "template_reports.office_renderer.pptx.loops.is_loop_end"
             ) as mock_is_end:
                 # Configure mocks to return true only for specific slides
                 mock_is_start.side_effect = (

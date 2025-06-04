@@ -38,3 +38,9 @@ class ImageError(Exception):
     """Raised when an error occurs while processing an image."""
 
     pass
+
+
+class LayoutError(Exception):
+    """Raised when an error occurs while processing layouts."""
+
+    pass

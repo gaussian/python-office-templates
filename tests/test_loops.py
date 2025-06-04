@@ -5,7 +5,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Inches
 
-from template_reports.office_renderer.loops import (
+from template_reports.office_renderer.pptx.loops import (
     extract_loop_directive,
     is_loop_end,
     is_loop_start,
@@ -376,11 +376,11 @@ class TestLoopProcessing(unittest.TestCase):
             any("without a matching loop start" in error for error in self.errors)
         )
 
-    @patch("template_reports.office_renderer.pptx.process_loops")
-    @patch("template_reports.office_renderer.pptx.Presentation")
+    @patch("template_reports.office_renderer.pptx.render.process_loops")
+    @patch("template_reports.office_renderer.pptx.render.Presentation")
     def test_process_loops_called(self, mock_presentation, mock_process_loops):
         """Test that process_loops is called from render_pptx."""
-        from template_reports.office_renderer.pptx import render_pptx
+        from template_reports.office_renderer.pptx.render import render_pptx
 
         # Prepare mock return value for process_loops
         mock_process_loops.return_value = []

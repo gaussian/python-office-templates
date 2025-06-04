@@ -1,4 +1,4 @@
-from ..templating import process_text
+from template_reports.templating import process_text
 from .exceptions import UnterminatedTagException
 
 

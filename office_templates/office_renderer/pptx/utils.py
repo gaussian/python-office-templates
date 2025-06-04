@@ -63,6 +63,63 @@ def duplicate_slide(
     return new_slide
 
 
+def copy_slide_across_presentations(
+    dest_pres: Presentation,
+    source_slide: Slide,
+    index: Optional[int] = None,
+) -> Slide:
+    """
+    Copy a slide from one presentation to another presentation.
+    
+    This function creates a new slide in the destination presentation
+    using the layout from the source slide and copies all shapes.
+    
+    Args:
+        dest_pres: The destination Presentation object
+        source_slide: The source slide object to copy
+        index: Optional position index for the new slide
+        
+    Returns:
+        The newly created slide object in the destination presentation
+    """
+    # Create a new slide using the source slide's layout
+    # Since layouts might not match, we'll use a blank layout and copy everything
+    if len(dest_pres.slide_layouts) > 0:
+        # Use blank layout or first available layout
+        layout = dest_pres.slide_layouts[6] if len(dest_pres.slide_layouts) > 6 else dest_pres.slide_layouts[0]
+    else:
+        # If no layouts available, this shouldn't happen but we'll handle it
+        raise ValueError("Destination presentation has no slide layouts")
+    
+    new_slide = dest_pres.slides.add_slide(layout)
+    
+    # Position the slide if index is specified
+    if index is not None:
+        sld_ids = dest_pres.slides._sldIdLst
+        new_sld_id = sld_ids[-1]  # id for slide we just appended
+        sld_ids.remove(new_sld_id)
+        
+        # Calculate actual position
+        dest_idx = (
+            len(sld_ids) + index
+            if index < 0  # negative slice logic
+            else index
+        )
+        dest_idx = max(0, min(dest_idx, len(sld_ids)))  # clamp to bounds
+        sld_ids.insert(dest_idx, new_sld_id)
+    
+    # Clear the default shapes from the new slide
+    for shape in list(new_slide.shapes):
+        remove_shape(shape)
+    
+    # Deep-copy all shapes from the source slide to the new slide
+    for shape in source_slide.shapes:
+        new_el = deepcopy(shape.element)
+        new_slide.shapes._spTree.insert_element_before(new_el, "p:extLst")
+    
+    return new_slide
+
+
 def remove_shape(shape: BaseShape):
     """
     Remove a shape from a slide.
