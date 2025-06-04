@@ -103,3 +103,34 @@ def process_text(
 
     # Join the parts to get the final result.
     return "".join(result_parts)
+
+
+def process_text_recursive(
+    obj,
+    context: dict,
+    perm_user=None,
+    mode: str = "normal",
+    delimiter: str = ", ",
+    fail_if_empty: bool = False,
+):
+
+    if isinstance(obj, str):
+        return process_text(obj, context, perm_user, mode, delimiter, fail_if_empty)
+
+    elif isinstance(obj, list):
+        return [
+            process_text_recursive(
+                item, context, perm_user, mode, delimiter, fail_if_empty
+            )
+            for item in obj
+        ]
+
+    elif isinstance(obj, dict):
+        return {
+            key: process_text_recursive(
+                value, context, perm_user, mode, delimiter, fail_if_empty
+            )
+            for key, value in obj.items()
+        }
+
+    return obj

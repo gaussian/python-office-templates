@@ -41,6 +41,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
              {{ value | .2f }}            will return the value formatted to two decimal places.
              {{ value | upper }}          will return the value in upper case.
              {{ value | lower }}          will return the value in lower case.
+             {{ value | length }}          will return the length of the value.
 
       9. [CURRENTLY DISABLED] Use of a pipe operator to retrieve more than one attribute from an object/dictionary
          and return a tuple of values. For example:
@@ -147,7 +148,7 @@ def apply_math_operator(value, math_operator, operand):
     # If the value is a list, apply the operation to each element.
     if isinstance(value, list):
         return [apply_math_operator(v, math_operator, operand) for v in value]
-    
+
     value = float(value if value else 0)
 
     if math_operator == "+":

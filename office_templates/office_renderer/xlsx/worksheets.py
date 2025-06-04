@@ -1,7 +1,7 @@
 from template_reports.templating.list import process_text_list
 
-from .exceptions import CellOverwriteError
-from .images import should_replace_cell_with_image, replace_cell_with_image
+from ..exceptions import CellOverwriteError
+from ..images import should_replace_cell_with_image, replace_cell_with_image
 
 
 def process_worksheet(worksheet, context: dict, perm_user=None):

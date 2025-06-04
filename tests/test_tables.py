@@ -19,7 +19,7 @@ class DummyRequestUser:
 
 
 class DummyElement:
-    """Bare‑bones XML element stand‑in."""
+    """Bare-bones XML element stand-in."""
 
     def __init__(self, text=""):
         self.text = text
@@ -29,7 +29,7 @@ class DummyElement:
     def getparent(self):
         return self.parent
 
-    # python‑pptx internal helper our *_Cell wrapper expects
+    # python-pptx internal helper our *_Cell wrapper expects
     def get_or_add_txBody(self):
         return self
 

@@ -1,40 +1,20 @@
 from pptx import Presentation
-from .charts import process_chart
-from .images import (
+
+from template_reports.templating.core import process_text
+
+from ..charts import process_chart
+from ..images import (
     replace_shape_with_image,
     should_replace_shape_with_image,
 )
+from ..paragraphs import process_paragraph
+from ..tables import process_table_cell
 from .loops import (
     is_loop_end,
     is_loop_start,
     process_loops,
-    LOOP_START_PATTERN,
-    LOOP_END_PATTERN,
 )
-from .paragraphs import process_paragraph
-from .pptx_utils import remove_shape
-from .tables import process_table_cell
-
-
-def clear_loop_directives(prs):
-    """
-    Clear the text of all shapes that contain loop directives.
-
-    Args:
-        prs: The Presentation object
-    """
-    for slide in prs.slides:
-        for shape in slide.shapes:
-            if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
-                text = shape.text_frame.text.strip()
-                if LOOP_START_PATTERN.search(text) or LOOP_END_PATTERN.search(text):
-                    # Clear text at paragraph level to handle formatting
-                    for paragraph in shape.text_frame.paragraphs:
-                        if paragraph.runs:
-                            for run in paragraph.runs:
-                                run.text = ""
-                        else:
-                            paragraph.text = ""
+from .utils import remove_shape
 
 
 def render_pptx(template, context: dict, output, perm_user):
@@ -49,7 +29,7 @@ def render_pptx(template, context: dict, output, perm_user):
         template.seek(0)
         prs = Presentation(template)
 
-    errors = []
+    errors: list[str] = []
 
     # Process loops first - identify loop sections and duplicate slides
     slides_to_process = process_loops(prs, context, perm_user, errors)
@@ -71,16 +51,8 @@ def render_pptx(template, context: dict, output, perm_user):
         if "loop_var" in slide_info and "loop_item" in slide_info:
             slide_context[slide_info["loop_var"]] = slide_info["loop_item"]
 
-        # Process the slide's shapes
-        for shape in slide.shapes:
-            # Skip loop directive shapes - we'll clear them later
-            if is_loop_start(shape) or is_loop_end(shape):
-                continue
-
-            # Process the shape content
-            process_shape_content(
-                shape, slide, slide_context, slide_number, perm_user, errors
-            )
+        # Process the slide
+        process_single_slide(slide, slide_context, slide_number, perm_user, errors)
 
     if errors:
         print("Rendering aborted due to the following errors:")
@@ -99,7 +71,32 @@ def render_pptx(template, context: dict, output, perm_user):
     return output, None
 
 
-def process_shape_content(shape, slide, context, slide_number, perm_user, errors):
+def process_single_slide(
+    slide,
+    context: dict,
+    slide_number,
+    perm_user,
+    errors: list[str],
+):
+    """Process a single slide with the given context."""
+    # Process the slide's shapes
+    for shape in slide.shapes:
+        # Skip loop directive shapes - we'll clear them later
+        if is_loop_start(shape) or is_loop_end(shape):
+            continue
+
+        # Process the shape content
+        process_shape_content(shape, slide, context, slide_number, perm_user, errors)
+
+
+def process_shape_content(
+    shape,
+    slide,
+    context: dict,
+    slide_number: int,
+    perm_user,
+    errors: list[str],
+):
     """Process the content of a shape based on its type."""
     # 1) Check if this shape should be replaced with an image.
     if should_replace_shape_with_image(shape):
