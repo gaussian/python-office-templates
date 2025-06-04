@@ -26,7 +26,9 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
                 {"month": "February", "revenue": 165000, "target": 150000},
                 {"month": "March", "revenue": 180000, "target": 160000},
             ],
+            "data_count": 3,  # Length of sales_data for template usage
             "top_products": ["Product A", "Product B", "Product C"],
+            "product_list": "Product A, Product B, Product C",  # Joined version for template
         }
 
     def tearDown(self):
@@ -50,7 +52,7 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         content_box = slide2.shapes.add_textbox(
             Inches(1), Inches(3), Inches(6), Inches(1)
         )
-        content_box.text_frame.text = "% layout summary %"
+        content_box.text_frame.text = "% layout summary %\n{{ summary_content }}"
 
         # Chart slide
         slide3 = prs.slides.add_slide(prs.slide_layouts[5])  # Blank layout
@@ -61,7 +63,7 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         chart_placeholder = slide3.shapes.add_textbox(
             Inches(1), Inches(2), Inches(8), Inches(4)
         )
-        chart_placeholder.text_frame.text = "% layout chart %"
+        chart_placeholder.text_frame.text = "% layout chart %\n{{ chart_title }}"
 
         # Save template
         temp_file = tempfile.mktemp(suffix=".pptx")
@@ -82,13 +84,13 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         table_marker = slide1.shapes.add_textbox(
             Inches(1), Inches(2), Inches(8), Inches(3)
         )
-        table_marker.text_frame.text = "% layout data_table %"
+        table_marker.text_frame.text = "% layout data_table %\n{{ table_title }}"
 
         # Product list slide
         slide2 = prs.slides.add_slide(prs.slide_layouts[1])
         slide2.shapes.title.text = "Top Products"
         if len(slide2.shapes) > 1:
-            slide2.shapes[1].text_frame.text = "Our best-selling products this quarter"
+            slide2.shapes[1].text_frame.text = "Our best-selling products this quarter\n{{ product_summary }}"
 
         # Save template
         temp_file = tempfile.mktemp(suffix=".pptx")
@@ -110,7 +112,7 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             # Executive summary using tagged layout
             {
                 "layout": "summary",
-                "summary_content": "This quarter exceeded expectations with {{ sales_data|length }} months of strong performance.",
+                "summary_content": "This quarter exceeded expectations with {{ data_count }} months of strong performance.",
             },
             # Data table using tagged layout from second template
             {
@@ -125,7 +127,7 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             # Product list using slide title as layout
             {
                 "layout": "Top Products",
-                "product_summary": 'Featured products: {{ top_products|join:", " }}',
+                "product_summary": "Featured products: {{ product_list }}",
             },
         ]
 
@@ -150,11 +152,46 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         prs = Presentation(output_file)
         self.assertEqual(len(prs.slides), 5)
 
-        # Check that slides have content
+        # Check that slides have content and verify specific processed content
         for slide in prs.slides:
             self.assertGreater(
                 len(slide.shapes), 0, "Each slide should have at least one shape"
             )
+
+        # Verify specific slide content was processed correctly
+        # Slide 1: Title slide with placeholders
+        slide1_text = self._extract_slide_text(prs.slides[0])
+        # Verify specific slide content was processed correctly
+        # Slide 1: Title slide with placeholders
+        slide1_text = self._extract_slide_text(prs.slides[0])
+        self.assertIn("Acme Corp Q1 2024 Report", slide1_text)
+        self.assertIn("John Smith, VP of Sales", slide1_text)
+
+        # Slide 2: Executive summary with template processing
+        slide2_text = self._extract_slide_text(prs.slides[1])
+        self.assertIn("3 months of strong performance", slide2_text)  # {{ data_count }} processed
+
+        # Slide 3: Data table with processed title
+        slide3_text = self._extract_slide_text(prs.slides[2])
+        self.assertIn("Q1 2024 Monthly Performance", slide3_text)
+
+        # Slide 4: Chart with processed title
+        slide4_text = self._extract_slide_text(prs.slides[3])
+        self.assertIn("Revenue vs Target - Q1 2024", slide4_text)
+
+        # Slide 5: Product list with joined products
+        slide5_text = self._extract_slide_text(prs.slides[4])
+        self.assertIn("Product A, Product B, Product C", slide5_text)
+
+    def _extract_slide_text(self, slide):
+        """Extract all text content from a slide for validation."""
+        text_content = []
+        for shape in slide.shapes:
+            if hasattr(shape, 'text'):
+                text_content.append(shape.text)
+            elif hasattr(shape, 'text_frame'):
+                text_content.append(shape.text_frame.text)
+        return " ".join(text_content)
 
     def test_mixed_layout_types_composition(self):
         """Test composition using all three layout discovery methods."""
@@ -162,9 +199,9 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             # Using master layout (slide layouts)
             {"layout": "Title Slide", "content": "Master layout test"},
             # Using tagged layout
-            {"layout": "summary", "content": "Tagged layout test"},
+            {"layout": "summary", "summary_content": "Tagged layout test"},
             # Using title-based layout
-            {"layout": "Top Products", "content": "Title-based layout test"},
+            {"layout": "Top Products", "product_summary": "Title-based layout test"},
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
@@ -193,7 +230,7 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             {
                 "layout": "Company Quarterly Report",
                 "placeholders": ["{{ company }} Report", "By {{ presenter.name }}"],
-                "custom_field": "Revenue grew {{ sales_data|length }}x this quarter",
+                "custom_field": "Revenue grew {{ data_count }}x this quarter",
             },
         ]
 
@@ -231,11 +268,11 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         """Test error handling in complex composition scenarios."""
         slide_specs = [
             # Valid slide
-            {"layout": "summary", "content": "Valid content"},
+            {"layout": "summary", "summary_content": "Valid content"},
             # Invalid layout
             {"layout": "NonExistentLayout", "content": "This should fail"},
             # Valid slide after error
-            {"layout": "Top Products", "content": "This should also be processed"},
+            {"layout": "Top Products", "product_summary": "This should also be processed"},
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")

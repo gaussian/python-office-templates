@@ -77,15 +77,8 @@ def process_single_slide(
     slide_number,
     perm_user,
     errors: list[str],
-    placeholders=None,
 ):
-    """Process a single slide with the given context and placeholders."""
-    # Handle placeholders first if provided
-    if placeholders:
-        process_placeholders(
-            slide, placeholders, context, slide_number, perm_user, errors
-        )
-
+    """Process a single slide with the given context."""
     # Process the slide's shapes
     for shape in slide.shapes:
         # Skip loop directive shapes - we'll clear them later
@@ -94,41 +87,6 @@ def process_single_slide(
 
         # Process the shape content
         process_shape_content(shape, slide, context, slide_number, perm_user, errors)
-
-
-def process_placeholders(
-    slide,
-    placeholders: list[str],
-    context: dict,
-    slide_number: int,
-    perm_user,
-    errors: list[str],
-):
-    """Process placeholder shapes on a slide."""
-
-    placeholder_index = 0
-    for shape in slide.shapes:
-        # Check if this shape is a placeholder
-        if (
-            hasattr(shape, "is_placeholder")
-            and shape.is_placeholder
-            and placeholder_index < len(placeholders)
-        ):
-            try:
-                placeholder_text = placeholders[placeholder_index]
-                processed_text = process_text(placeholder_text, context, perm_user)
-
-                # Set the processed text to the shape
-                if hasattr(shape, "text_frame"):
-                    shape.text_frame.text = processed_text
-                elif hasattr(shape, "text"):
-                    shape.text = processed_text
-
-                placeholder_index += 1
-            except Exception as e:
-                errors.append(
-                    f"Error processing placeholder {placeholder_index} (slide {slide_number}): {e}"
-                )
 
 
 def process_shape_content(

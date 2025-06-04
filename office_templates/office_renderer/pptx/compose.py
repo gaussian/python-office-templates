@@ -1,8 +1,45 @@
 from pptx import Presentation
 
+from template_reports.templating.core import process_text
+
 from .render import process_single_slide
 from .layout_utils import build_layout_mapping
 from .slide_utils import copy_slide_across_presentations
+
+
+def process_placeholders(
+    slide,
+    placeholders: list[str],
+    context: dict,
+    slide_number: int,
+    perm_user,
+    errors: list[str],
+):
+    """Process placeholder shapes on a slide."""
+
+    placeholder_index = 0
+    for shape in slide.shapes:
+        # Check if this shape is a placeholder
+        if (
+            hasattr(shape, "is_placeholder")
+            and shape.is_placeholder
+            and placeholder_index < len(placeholders)
+        ):
+            try:
+                placeholder_text = placeholders[placeholder_index]
+                processed_text = process_text(placeholder_text, context, perm_user)
+
+                # Set the processed text to the shape
+                if hasattr(shape, "text_frame"):
+                    shape.text_frame.text = processed_text
+                elif hasattr(shape, "text"):
+                    shape.text = processed_text
+
+                placeholder_index += 1
+            except Exception as e:
+                errors.append(
+                    f"Error processing placeholder {placeholder_index} (slide {slide_number}): {e}"
+                )
 
 
 def compose_pptx(
@@ -102,10 +139,26 @@ def compose_pptx(
 
                 # Prepare slide context
                 slide_context = {**global_context, **slide_spec}
+                
+                # Pre-process any template variables in slide context values
+                # This handles cases where slide context contains template strings
+                for key, value in slide_context.items():
+                    if isinstance(value, str) and '{{' in value and '}}' in value:
+                        try:
+                            slide_context[key] = process_text(value, slide_context, perm_user)
+                        except Exception as e:
+                            errors.append(f"Error processing template in slide context '{key}': {e}")
+                
                 slide_number = slide_index + 1
 
                 # Get placeholders if specified
                 placeholders = slide_spec.get("placeholders", None)
+                
+                # Handle placeholders first if provided
+                if placeholders:
+                    process_placeholders(
+                        new_slide, placeholders, slide_context, slide_number, perm_user, errors
+                    )
 
                 # Process the slide
                 process_single_slide(
@@ -114,7 +167,6 @@ def compose_pptx(
                     slide_number,
                     perm_user,
                     errors,
-                    placeholders,
                 )
 
             except Exception as e:
