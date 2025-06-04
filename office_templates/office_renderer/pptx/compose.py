@@ -3,8 +3,8 @@ from pptx import Presentation
 from template_reports.templating.core import process_text_recursive
 
 from .render import process_single_slide
-from .layout_utils import build_layout_mapping
-from .slide_utils import copy_slide_across_presentations
+from .layouts import build_layout_mapping
+from .utils import copy_slide_across_presentations
 
 
 def compose_pptx(

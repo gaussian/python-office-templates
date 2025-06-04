@@ -14,7 +14,7 @@ from .loops import (
     is_loop_start,
     process_loops,
 )
-from .slide_utils import remove_shape
+from .utils import remove_shape
 
 
 def render_pptx(template, context: dict, output, perm_user):

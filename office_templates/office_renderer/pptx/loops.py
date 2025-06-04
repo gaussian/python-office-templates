@@ -13,7 +13,7 @@ from ..constants import (
     LOOP_START_PATTERN_STR,
     LOOP_END_PATTERN_STR,
 )
-from .slide_utils import duplicate_slide, remove_shape
+from .utils import duplicate_slide, remove_shape
 
 if TYPE_CHECKING:
     from pptx.presentation import Presentation

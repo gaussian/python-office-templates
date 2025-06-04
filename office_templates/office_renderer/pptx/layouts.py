@@ -1,5 +1,5 @@
 from pptx import Presentation
-from .slide_utils import remove_shape
+from .utils import remove_shape
 from .loops import is_loop_start, is_loop_end
 
 
@@ -76,7 +76,7 @@ def get_tagged_layouts(prs):
     for slide in prs.slides:
         layout_shapes = []
         layout_id = None
-        
+
         # First pass: find all %layout% shapes and check for conflicts
         for shape in slide.shapes:
             if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
@@ -87,22 +87,26 @@ def get_tagged_layouts(prs):
                     if layout_id is None:
                         layout_id = match.group(1)
                     elif layout_id != match.group(1):
-                        raise ValueError(f"Multiple different layout IDs found on same slide: '{layout_id}' and '{match.group(1)}'")
-        
+                        raise ValueError(
+                            f"Multiple different layout IDs found on same slide: '{layout_id}' and '{match.group(1)}'"
+                        )
+
         # Validate: only one %layout% shape per slide
         if len(layout_shapes) > 1:
             raise ValueError(f"Multiple %layout% shapes found on same slide")
-        
+
         # If we found a layout, validate no loop directives on this slide
         if layout_id is not None:
             for shape in slide.shapes:
                 if is_loop_start(shape) or is_loop_end(shape):
-                    raise ValueError(f"Slide with %layout% cannot contain %loop% or %endloop% directives")
-            
+                    raise ValueError(
+                        f"Slide with %layout% cannot contain %loop% or %endloop% directives"
+                    )
+
             # Remove the %layout% shape
             for shape in layout_shapes:
                 remove_shape(shape)
-            
+
             layouts[layout_id] = slide
 
     return layouts
