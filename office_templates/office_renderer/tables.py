@@ -16,6 +16,13 @@ def process_table_cell(cell, context: dict, perm_user=None):
     If the result is a list, fill the column with the list items (and expand table if not enough room).
     Otherwise, process each paragraph in "normal" mode.
     """
+    # Convert perm_user to check_permissions lambda
+    from template_reports.templating.permissions import has_view_permission
+    if perm_user is not None:
+        check_permissions = lambda obj: has_view_permission(obj, perm_user)
+    else:
+        check_permissions = None
+        
     cell_text = cell.text.strip()
 
     matches = get_matching_tags(cell_text)
@@ -25,7 +32,7 @@ def process_table_cell(cell, context: dict, perm_user=None):
         result = process_text(
             text=cell_text,
             context=context,
-            perm_user=perm_user,
+            check_permissions=check_permissions,
             mode="table",
             fail_if_empty=False,
         )

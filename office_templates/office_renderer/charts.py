@@ -25,16 +25,22 @@ def process_chart(chart: Chart, context: dict, perm_user):
         context: a dict used for formatting placeholders in text values.
         perm_user: passed along for consistency (not used in this example).
     """
+    # Convert perm_user to check_permissions lambda
+    from template_reports.templating.permissions import has_view_permission
+    if perm_user is not None:
+        check_permissions = lambda obj: has_view_permission(obj, perm_user)
+    else:
+        check_permissions = None
 
     # Common kwargs
     process_kwargs = dict(
         context=context,
-        perm_user=perm_user,
+        check_permissions=check_permissions,
         fail_if_empty=True,
     )
 
     # (1) Process series DATA in the chart (excluding series names and categories).
-    all_processed_series_data = process_series_data(chart, context, perm_user)
+    all_processed_series_data = process_series_data(chart, context, check_permissions)
     # Transpose the data if the chart's axes are swapped.
     if chart_axes_are_swapped(chart):
         all_processed_series_data = list(zip(*all_processed_series_data))
@@ -104,7 +110,7 @@ def get_raw_chart_data(chart: Chart):
     return [[cell.value for cell in col] for col in worksheet.iter_cols()]
 
 
-def process_series_data(chart: Chart, context, perm_user):
+def process_series_data(chart: Chart, context, check_permissions):
     """
     Process the data in a chart, excluding the series names and categories.
 
@@ -128,7 +134,7 @@ def process_series_data(chart: Chart, context, perm_user):
             # Skip the first row, which is handled by the ChartData series/categories.
             col[1:],
             context,
-            perm_user,
+            check_permissions,
             as_float=True,
             fail_if_not_float=True,
             fail_if_empty=False,

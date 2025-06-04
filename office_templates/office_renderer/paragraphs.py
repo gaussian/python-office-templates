@@ -1,3 +1,4 @@
+from typing import Callable, Optional
 from template_reports.templating import process_text
 from .exceptions import UnterminatedTagException
 
@@ -48,6 +49,13 @@ def process_paragraph(paragraph, context, perm_user, mode="normal"):
     Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
     Then process each run's text with process_text.
     """
+    # Convert perm_user to check_permissions lambda
+    from template_reports.templating.permissions import has_view_permission
+    if perm_user is not None:
+        check_permissions = lambda obj: has_view_permission(obj, perm_user)
+    else:
+        check_permissions = None
+    
     # Use the helper to merge runs containing split placeholders.
     paragraph = merge_split_placeholders(paragraph)
 
@@ -56,7 +64,7 @@ def process_paragraph(paragraph, context, perm_user, mode="normal"):
         result = process_text(
             text=current_text,
             context=context,
-            perm_user=perm_user,
+            check_permissions=check_permissions,
             mode=mode,
             fail_if_empty=True,
         )
