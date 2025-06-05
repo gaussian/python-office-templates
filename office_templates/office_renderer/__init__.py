@@ -1,3 +1,4 @@
+from .render import render_from_file_stream
 from .pptx.render import render_pptx
 from .pptx.compose import compose_pptx
 from .xlsx.render import render_xlsx
