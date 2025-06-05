@@ -9,7 +9,8 @@ from template_reports.templating.exceptions import (
     MissingDataException,
 )
 from template_reports.templating.core import process_text
-from template_reports.templating.permissions import has_view_permission
+
+from tests.utils import has_view_permission
 
 
 # ----- Dummy Classes for Testing -----

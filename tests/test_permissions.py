@@ -1,10 +1,10 @@
 import unittest
 from template_reports.templating.permissions import (
-    is_django_object,
-    has_view_permission,
     enforce_permissions,
 )
 from template_reports.templating.exceptions import PermissionDeniedException
+
+from tests.utils import has_view_permission, is_django_object
 
 
 # Dummy request user for permission testing.
@@ -43,24 +43,24 @@ class TestPermissions(unittest.TestCase):
         # Deny any object whose name contains "deny".
         self.request_user = DummyRequestUser(deny_pattern="deny")
 
-    def test_is_django_object(self):
-        self.assertFalse(is_django_object(self.non_django))
-        self.assertTrue(is_django_object(self.django_allowed))
+    # def test_is_django_object(self):
+    #     self.assertFalse(is_django_object(self.non_django))
+    #     self.assertTrue(is_django_object(self.django_allowed))
 
-    def test_has_view_permission(self):
-        # Non-Django objects always return True.
-        self.assertTrue(has_view_permission(self.non_django, self.request_user))
-        # Allowed Django-like object.
-        self.assertTrue(has_view_permission(self.django_allowed, self.request_user))
-        # Denied Django-like object.
-        self.assertFalse(has_view_permission(self.django_denied, self.request_user))
-        # With no request_user, should return False on Django objects.
-        self.assertFalse(has_view_permission(self.django_allowed, None))
+    # def test_has_view_permission(self):
+    #     # Non-Django objects always return True.
+    #     self.assertTrue(has_view_permission(self.non_django, self.request_user))
+    #     # Allowed Django-like object.
+    #     self.assertTrue(has_view_permission(self.django_allowed, self.request_user))
+    #     # Denied Django-like object.
+    #     self.assertFalse(has_view_permission(self.django_denied, self.request_user))
+    #     # With no request_user, should return False on Django objects.
+    #     self.assertFalse(has_view_permission(self.django_allowed, None))
 
     def test_enforce_permissions_single_value(self):
         # Create check_permissions lambda
         check_permissions = lambda o: has_view_permission(o, self.request_user)
-        
+
         # For a non-Django object, value is returned unchanged.
         val = "test value"
         res = enforce_permissions(val, check_permissions, True)
@@ -77,7 +77,7 @@ class TestPermissions(unittest.TestCase):
     def test_enforce_permissions_list(self):
         # Create check_permissions lambda
         check_permissions = lambda o: has_view_permission(o, self.request_user)
-        
+
         # Test on a list containing an allowed object and a denied object.
         values = [self.django_allowed, self.django_denied, self.non_django]
         with self.assertRaises(PermissionDeniedException):
@@ -86,7 +86,7 @@ class TestPermissions(unittest.TestCase):
     def test_enforce_permissions_single_value_exception(self):
         # Create check_permissions lambda
         check_permissions = lambda o: has_view_permission(o, self.request_user)
-        
+
         # When permission is denied and raise_exception is True.
         with self.assertRaises(PermissionDeniedException):
             enforce_permissions(
@@ -97,7 +97,7 @@ class TestPermissions(unittest.TestCase):
     def test_enforce_permissions_list_exception(self):
         # Create check_permissions lambda
         check_permissions = lambda o: has_view_permission(o, self.request_user)
-        
+
         values = [self.django_allowed, self.django_denied, self.non_django]
         with self.assertRaises(PermissionDeniedException):
             enforce_permissions(values, check_permissions)

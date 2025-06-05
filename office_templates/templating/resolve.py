@@ -5,12 +5,16 @@ from typing import Callable, Optional
 from .exceptions import BadTagException, MissingDataException, TagCallableException
 from .formatting import format_value
 from .parse import get_nested_attr, evaluate_condition, parse_callable_args
-from .permissions import enforce_permissions, is_django_object, has_view_permission
+from .permissions import enforce_permissions
 
 BAD_SEGMENT_PATTERN = re.compile(r"^[#%]*$")
 
 
-def resolve_formatted_tag(expr: str, context, check_permissions: Optional[Callable[[object], bool]] = None):
+def resolve_formatted_tag(
+    expr: str,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]] = None,
+):
     """
     Resolve a template tag expression and return its final value.
 
@@ -164,7 +168,9 @@ def apply_math_operator(value, math_operator, operand):
     return value
 
 
-def substitute_inner_tags(expr: str, context, check_permissions: Optional[Callable[[object], bool]] = None) -> str:
+def substitute_inner_tags(
+    expr: str, context, check_permissions: Optional[Callable[[object], bool]] = None
+) -> str:
     """
     Replace any sub-tags embedded within a tag expression. A sub-tag is any substring
     within a tag that is enclosed between dollar signs ($). For example, in a tag like:
@@ -195,7 +201,9 @@ def substitute_inner_tags(expr: str, context, check_permissions: Optional[Callab
     return pattern.sub(replace_func, expr)
 
 
-def resolve_tag(expr, context, check_permissions: Optional[Callable[[object], bool]] = None):
+def resolve_tag(
+    expr, context, check_permissions: Optional[Callable[[object], bool]] = None
+):
     """
     Resolve a dotted tag expression using the provided context. The expression can consist
     of multiple segments separated by periods. Each segment may represent:
@@ -258,7 +266,9 @@ def split_expression(expr):
     return re.split(r"\.(?![^\[]*\])", expr)
 
 
-def resolve_segment(current, segment, check_permissions: Optional[Callable[[object], bool]] = None):
+def resolve_segment(
+    current, segment, check_permissions: Optional[Callable[[object], bool]] = None
+):
     """
     Resolve a single segment of a dotted tag expression.
 

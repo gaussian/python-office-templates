@@ -5,7 +5,8 @@ from unittest.mock import patch
 from openpyxl import Workbook, load_workbook
 
 from template_reports.office_renderer import render_xlsx
-from template_reports.templating.permissions import PermissionDeniedException, has_view_permission
+
+from tests.utils import has_view_permission
 
 
 # Dummy objects for integration testing
@@ -139,7 +140,9 @@ class TestXlsxIntegration(unittest.TestCase):
         with open(self.temp_input, "rb") as input_file:
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as output_file:
                 # Run the renderer with file objects
-                check_permissions = lambda obj: has_view_permission(obj, self.request_user)
+                check_permissions = lambda obj: has_view_permission(
+                    obj, self.request_user
+                )
                 rendered, errors = render_xlsx(
                     input_file, self.context, output_file, check_permissions
                 )
@@ -212,9 +215,7 @@ class TestXlsxIntegration(unittest.TestCase):
 
         try:
             # This should raise a CellOverwriteError when rendering
-            rendered, errors = render_xlsx(
-                temp_input, context, temp_output, None
-            )
+            rendered, errors = render_xlsx(temp_input, context, temp_output, None)
 
             # Verify that rendering failed with appropriate error
             self.assertIsNone(rendered)

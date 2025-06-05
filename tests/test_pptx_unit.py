@@ -6,7 +6,8 @@ from pptx import Presentation
 from pptx.util import Inches
 
 from template_reports.office_renderer import render_pptx
-from template_reports.templating.permissions import has_view_permission
+
+from tests.utils import has_view_permission
 
 
 # Dummy objects for testing renderer behavior.

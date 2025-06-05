@@ -246,7 +246,7 @@ class TestTables(unittest.TestCase):
         orig = tables.process_paragraph
         try:
 
-            def dummy_pp(paragraph, context, perm_user, mode):
+            def dummy_pp(paragraph, context, check_permissions, mode):
                 paragraph.clear()
                 paragraph.add_run().text = "Repl"
 

@@ -4,7 +4,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from template_reports.office_renderer import render_xlsx
-from template_reports.templating.permissions import has_view_permission
+
+from tests.utils import has_view_permission
 
 
 class TestXlsxUnit(unittest.TestCase):
@@ -59,20 +60,24 @@ class TestXlsxUnit(unittest.TestCase):
         # Verify the calls made to process_worksheet
         # Check that it was called twice
         self.assertEqual(mock_process_worksheet.call_count, 2)
-        
+
         # Check the first call (Sheet1)
         first_call_args, first_call_kwargs = mock_process_worksheet.call_args_list[0]
-        self.assertEqual(first_call_kwargs['worksheet'], mock_worksheet)
-        self.assertEqual(first_call_kwargs['context']['sheet_name'], 'Sheet1')
-        self.assertEqual(first_call_kwargs['context']['user']['name'], 'Alice')
-        self.assertIsNotNone(first_call_kwargs['check_permissions'])  # Lambda function present
+        self.assertEqual(first_call_kwargs["worksheet"], mock_worksheet)
+        self.assertEqual(first_call_kwargs["context"]["sheet_name"], "Sheet1")
+        self.assertEqual(first_call_kwargs["context"]["user"]["name"], "Alice")
+        self.assertIsNotNone(
+            first_call_kwargs["check_permissions"]
+        )  # Lambda function present
 
         # Check the second call (Sheet2)
         second_call_args, second_call_kwargs = mock_process_worksheet.call_args_list[1]
-        self.assertEqual(second_call_kwargs['worksheet'], mock_worksheet)
-        self.assertEqual(second_call_kwargs['context']['sheet_name'], 'Sheet2')
-        self.assertEqual(second_call_kwargs['context']['user']['name'], 'Alice')
-        self.assertIsNotNone(second_call_kwargs['check_permissions'])  # Lambda function present
+        self.assertEqual(second_call_kwargs["worksheet"], mock_worksheet)
+        self.assertEqual(second_call_kwargs["context"]["sheet_name"], "Sheet2")
+        self.assertEqual(second_call_kwargs["context"]["user"]["name"], "Alice")
+        self.assertIsNotNone(
+            second_call_kwargs["check_permissions"]
+        )  # Lambda function present
 
         # Verify workbook.save was called with the output path
         mock_workbook.save.assert_called_once_with(self.temp_output)
