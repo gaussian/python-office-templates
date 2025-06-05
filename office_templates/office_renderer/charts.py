@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 from pptx.chart.data import ChartData
 
-from template_reports.templating.list import process_text_list
+from office_templates.templating.list import process_text_list
 
 from .exceptions import ChartError
 from .utils import get_load_workbook

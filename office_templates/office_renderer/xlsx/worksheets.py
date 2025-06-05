@@ -1,5 +1,5 @@
 from typing import Callable, Optional
-from template_reports.templating.list import process_text_list
+from office_templates.templating.list import process_text_list
 
 from ..exceptions import CellOverwriteError
 from ..images import should_replace_cell_with_image, replace_cell_with_image

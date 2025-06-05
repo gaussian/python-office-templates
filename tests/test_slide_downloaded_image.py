@@ -8,7 +8,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Inches
 from PIL import Image
 
-from template_reports.office_renderer.images import replace_shape_with_image, ImageError
+from office_templates.office_renderer.images import replace_shape_with_image, ImageError
 
 
 class TestSlideDownloadedImage(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestSlideDownloadedImage(unittest.TestCase):
         self.assertEqual(pic.width, original_width)
         self.assertEqual(pic.height, original_height)
 
-    @patch("template_reports.office_renderer.images.urlopen")
+    @patch("office_templates.office_renderer.images.urlopen")
     def test_invalid_url_raises_image_error(self, mock_urlopen):
         mock_urlopen.side_effect = Exception("boom")
         self.textbox.text_frame.text = "%image% http://example.com/foo.png"

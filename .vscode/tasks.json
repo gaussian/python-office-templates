@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Render Dummy Template",
+        "type": "shell",
+        "command": "python",
+        "args": [
+          "-m",
+          "template_reports.dummy_render",
+          "${input:templatePath}",
+          "${input:extraArg}"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": []
+      }
+    ],
+    "inputs": [
+      {
+        "id": "templatePath",
+        "type": "promptString",
+        "description": "Enter the template path",
+        "default": "template_reports/raw_templates/template.pptx"
+      },
+      {
+        "id": "extraArg",
+        "type": "promptString",
+        "description": "Enter an additional argument (optional)",
+        "default": ""
+      }
+    ]
+  }
+  

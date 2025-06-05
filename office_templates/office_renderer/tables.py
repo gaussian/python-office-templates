@@ -3,7 +3,7 @@ from typing import Callable, Optional
 
 from pptx.table import _Cell
 
-from template_reports.templating import process_text, get_matching_tags
+from office_templates.templating import process_text, get_matching_tags
 
 from .exceptions import CellOverwriteError, TableError
 from .paragraphs import process_paragraph

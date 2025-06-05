@@ -2,7 +2,7 @@ from typing import Callable, Optional
 
 from pptx import Presentation
 
-from template_reports.templating.core import process_text_recursive
+from office_templates.templating.core import process_text_recursive
 
 from .render import process_single_slide
 from .layouts import build_layout_mapping

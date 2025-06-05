@@ -5,7 +5,7 @@ import unittest
 from pptx import Presentation
 from pptx.util import Inches
 
-from template_reports.office_renderer import compose_pptx
+from office_templates.office_renderer import compose_pptx
 
 
 class TestPPTXCompositionIntegration(unittest.TestCase):

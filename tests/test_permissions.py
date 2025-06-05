@@ -1,8 +1,8 @@
 import unittest
-from template_reports.templating.permissions import (
+from office_templates.templating.permissions import (
     enforce_permissions,
 )
-from template_reports.templating.exceptions import PermissionDeniedException
+from office_templates.templating.exceptions import PermissionDeniedException
 
 from tests.utils import has_view_permission, is_django_object
 

@@ -3,12 +3,12 @@ import re
 import unittest
 from unittest.mock import patch
 
-from template_reports.templating.exceptions import (
+from office_templates.templating.exceptions import (
     BadTemplateModeError,
     PermissionDeniedException,
     MissingDataException,
 )
-from template_reports.templating.core import process_text
+from office_templates.templating.core import process_text
 
 from tests.utils import has_view_permission
 
@@ -81,7 +81,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         # Use a dummy request user that denies permission on any object whose name contains "deny".
         self.request_user = DummyRequestUser()
 
-    @patch("template_reports.templating.resolve.datetime.datetime")
+    @patch("office_templates.templating.resolve.datetime.datetime")
     def test_pure_now_formatting_normal(self, mock_dt):
         # Patch datetime.datetime.now in the parser module to always return self.now.
         mock_dt.now.return_value = self.now
@@ -126,7 +126,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
 
         # Test with now to ensure it works the same
         tpl2 = "{{ now | MMMM dd, YYYY }}"
-        with patch("template_reports.templating.resolve.datetime.datetime") as mock_dt:
+        with patch("office_templates.templating.resolve.datetime.datetime") as mock_dt:
             mock_dt.now.return_value = self.now
             result2 = process_text(
                 tpl2,
@@ -298,7 +298,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         )
         self.assertEqual(result, tpl)
 
-    @patch("template_reports.templating.resolve.datetime.datetime")
+    @patch("office_templates.templating.resolve.datetime.datetime")
     def test_now_in_mixed_text(self, mock_dt):
         mock_dt.now.return_value = self.now
         tpl = "Date is {{ now | MMMM dd, YYYY }} and time is set."
@@ -468,7 +468,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         self.request_user = DummyRequestUser()
 
     # Table mode tests.
-    @patch("template_reports.templating.resolve.datetime.datetime")
+    @patch("office_templates.templating.resolve.datetime.datetime")
     def test_pure_now_formatting_table(self, mock_dt):
         # Patch datetime.datetime.now in the parser module to always return self.now.
         mock_dt.now.return_value = self.now

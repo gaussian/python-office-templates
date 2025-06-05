@@ -1,6 +1,6 @@
 import unittest
-from template_reports.templating.list import process_text_list, make_float
-from template_reports.templating.exceptions import BadFloatDataResultError
+from office_templates.templating.list import process_text_list, make_float
+from office_templates.templating.exceptions import BadFloatDataResultError
 
 
 # Dummy user for permission testing
