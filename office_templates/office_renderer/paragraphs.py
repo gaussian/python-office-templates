@@ -1,5 +1,5 @@
 from typing import Callable, Optional
-from template_reports.templating import process_text
+from office_templates.templating import process_text
 from .exceptions import UnterminatedTagException
 
 

@@ -5,8 +5,8 @@ import unittest
 from pptx import Presentation
 from pptx.util import Inches
 
-from template_reports.office_renderer import render_pptx
-from template_reports.office_renderer.pptx.loops import is_loop_start, is_loop_end
+from office_templates.office_renderer import render_pptx
+from office_templates.office_renderer.pptx.loops import is_loop_start, is_loop_end
 
 
 class TestRealPptxLoops(unittest.TestCase):

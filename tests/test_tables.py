@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 
-from template_reports.office_renderer.exceptions import TableError
-import template_reports.office_renderer.tables as tables
-from template_reports.office_renderer.tables import (
+from office_templates.office_renderer.exceptions import TableError
+import office_templates.office_renderer.tables as tables
+from office_templates.office_renderer.tables import (
     clone_row_with_value,
     fill_column_with_list,
     process_table_cell,
@@ -177,7 +177,7 @@ class TestTables(unittest.TestCase):
 
     # --- clone_row_with_value ---
     @patch("pptx.table._Cell", new=DummyCell)
-    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
+    @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     def test_clone_row_with_value_normal(self):
         row = DummyRow([DummyElement("A"), DummyElement("B"), DummyElement("C")])
         cloned = clone_row_with_value(row, 1, "NEW")
@@ -186,14 +186,14 @@ class TestTables(unittest.TestCase):
         self.assertEqual(row[1].text, "B")
 
     @patch("pptx.table._Cell", new=DummyCell)
-    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
+    @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     def test_clone_row_with_value_out_of_range(self):
         with self.assertRaises(TableError):
             clone_row_with_value(DummyRow([DummyElement("X")]), 5, "NOPE")
 
     # --- fill_column_with_list ---
     @patch("pptx.table._Cell", new=DummyCell)
-    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
+    @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     def test_fill_column_with_list_normal(self):
         cw = DummyCellWrapper("ORIGINAL")
         row = DummyRow([cw._tc])
@@ -206,7 +206,7 @@ class TestTables(unittest.TestCase):
         self.assertEqual(DummyCell(tbl.rows[2][0], tbl.rows[2]).text, "Third")
 
     @patch("pptx.table._Cell", new=DummyCell)
-    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
+    @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     def test_fill_column_with_list_empty(self):
         cw = DummyCellWrapper("NonEmpty")
         row = DummyRow([cw._tc])
@@ -216,7 +216,7 @@ class TestTables(unittest.TestCase):
         self.assertEqual(cw.text, "")
 
     @patch("pptx.table._Cell", new=DummyCell)
-    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
+    @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     def test_fill_column_with_list_preserves_formatting(self):
         class BR(DummyRun):
             def __init__(self, text):
@@ -238,7 +238,7 @@ class TestTables(unittest.TestCase):
 
     # --- process_table_cell (mixed) ---
     @patch(
-        "template_reports.office_renderer.tables.get_matching_tags",
+        "office_templates.office_renderer.tables.get_matching_tags",
         return_value=["x", "y"],
     )
     def test_process_table_cell_mixed_text(self, *_):
@@ -258,12 +258,12 @@ class TestTables(unittest.TestCase):
 
     # --- process_table_cell (pure) ---
     @patch("pptx.table._Cell", new=DummyCell)
-    @patch("template_reports.office_renderer.tables._Cell", new=DummyCell)
+    @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     @patch(
-        "template_reports.office_renderer.tables.process_text", return_value=["R1", "R2"]
+        "office_templates.office_renderer.tables.process_text", return_value=["R1", "R2"]
     )
     @patch(
-        "template_reports.office_renderer.tables.get_matching_tags", return_value=["only"]
+        "office_templates.office_renderer.tables.get_matching_tags", return_value=["only"]
     )
     def test_process_table_cell_pure_placeholder(self, *_):
         cw = DummyCellWrapper("{{ only }}")

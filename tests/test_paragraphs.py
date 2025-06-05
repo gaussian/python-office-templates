@@ -1,5 +1,5 @@
 import unittest
-from template_reports.office_renderer.paragraphs import (
+from office_templates.office_renderer.paragraphs import (
     merge_split_placeholders,
     UnterminatedTagException,
 )

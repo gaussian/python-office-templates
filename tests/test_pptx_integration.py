@@ -8,7 +8,7 @@ from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Inches
 
-from template_reports.office_renderer import render_pptx
+from office_templates.office_renderer import render_pptx
 
 
 # Dummy objects for integration testing.

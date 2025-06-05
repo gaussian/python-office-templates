@@ -1,5 +1,5 @@
 import unittest
-from template_reports.templating.formatting import convert_date_format
+from office_templates.templating.formatting import convert_date_format
 
 
 class TestFormatting(unittest.TestCase):

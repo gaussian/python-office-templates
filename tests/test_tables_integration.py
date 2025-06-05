@@ -2,7 +2,7 @@ import unittest
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-from template_reports.office_renderer.tables import process_table_cell
+from office_templates.office_renderer.tables import process_table_cell
 
 
 class TestTablesIntegration(unittest.TestCase):

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from openpyxl import Workbook, load_workbook
 
-from template_reports.office_renderer import render_xlsx
+from office_templates.office_renderer import render_xlsx
 
 from tests.utils import has_view_permission
 

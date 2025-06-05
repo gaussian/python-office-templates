@@ -4,13 +4,13 @@ import os
 from openpyxl import Workbook
 from pptx import Presentation
 
-from template_reports.office_renderer.context_extractor import (
+from office_templates.office_renderer.context_extractor import (
     extract_context_keys,
     extract_context_keys_from_xlsx,
     extract_context_keys_from_pptx,
     extract_top_level_context_keys_from_text,
 )
-from template_reports.office_renderer.utils import identify_file_type
+from office_templates.office_renderer.utils import identify_file_type
 
 
 class TestContextExtractor(unittest.TestCase):

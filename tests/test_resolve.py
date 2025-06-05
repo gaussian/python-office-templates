@@ -2,12 +2,12 @@ import unittest
 import datetime
 from unittest.mock import patch
 
-from template_reports.templating.resolve import (
+from office_templates.templating.resolve import (
     resolve_formatted_tag,
     split_expression,
     resolve_segment,
 )
-from template_reports.templating.exceptions import (
+from office_templates.templating.exceptions import (
     BadTagException,
     MissingDataException,
 )
@@ -175,7 +175,7 @@ class TestParser(unittest.TestCase):
         context = {"user": {"name": "Alice"}}
         self.assertEqual(resolve_formatted_tag("user.name", context), "Alice")
 
-    @patch("template_reports.templating.resolve.datetime")
+    @patch("office_templates.templating.resolve.datetime")
     def test_now_expression(self, mock_datetime):
         # For "now", patch datetime.datetime.now to return a fixed value.
         fixed_now = datetime.datetime(2025, 2, 18, 12, 0, 0)

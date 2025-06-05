@@ -5,8 +5,8 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx import Presentation
 from pptx.util import Inches
 
-from template_reports.office_renderer.charts import process_chart
-from template_reports.templating.exceptions import EmptyDataException
+from office_templates.office_renderer.charts import process_chart
+from office_templates.templating.exceptions import EmptyDataException
 
 
 class DummyPlot:
@@ -78,11 +78,11 @@ class TestProcessChart(unittest.TestCase):
         with (
             patch.dict("sys.modules", {"openpyxl": mock_openpyxl}),
             patch(
-                "template_reports.office_renderer.charts.BytesIO",
+                "office_templates.office_renderer.charts.BytesIO",
                 return_value=mock_bytesio,
             ),
             patch(
-                "template_reports.office_renderer.charts.chart_axes_are_swapped",
+                "office_templates.office_renderer.charts.chart_axes_are_swapped",
                 return_value=False,
             ),
         ):

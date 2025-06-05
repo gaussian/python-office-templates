@@ -43,7 +43,7 @@ Template files are just normal PowerPoint or Excel documents.  No coding or macr
    The former keeps the image's aspect ratio while fitting it inside the shape. The latter squeezes the image to exactly fill the shape.
 5. **Save the file** and register it in the Django admin as a report template.
 
-You can experiment with the example files in `template_reports/raw_templates` to see common patterns.  Remember that all placeholders are plain text—avoid formulas or punctuation that might confuse the parser.
+You can experiment with the example files in `office_templates/raw_templates` to see common patterns.  Remember that all placeholders are plain text—avoid formulas or punctuation that might confuse the parser.
 
 Chart data sheets can also contain placeholders so your graphs update automatically.
 

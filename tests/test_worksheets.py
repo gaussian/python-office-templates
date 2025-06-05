@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from template_reports.office_renderer.xlsx.worksheets import process_worksheet
-from template_reports.office_renderer.exceptions import CellOverwriteError
+from office_templates.office_renderer.xlsx.worksheets import process_worksheet
+from office_templates.office_renderer.exceptions import CellOverwriteError
 
 from tests.utils import has_view_permission
 
@@ -57,7 +57,7 @@ class TestProcessWorksheet(unittest.TestCase):
         self.request_user = MagicMock()
         self.request_user.has_perm.return_value = True
 
-    @patch("template_reports.office_renderer.xlsx.worksheets.process_text_list")
+    @patch("office_templates.office_renderer.xlsx.worksheets.process_text_list")
     def test_process_worksheet_basic(self, mock_process_text_list):
         """Test that the process_worksheet function processes all columns."""
         # Set up mock return values for process_text_list - each call returns a single value per cell
@@ -84,7 +84,7 @@ class TestProcessWorksheet(unittest.TestCase):
         self.assertEqual(self.cell4.value, 20.25)
         self.assertEqual(self.cell5.value, 30.75)
 
-    @patch("template_reports.office_renderer.xlsx.worksheets.process_text_list")
+    @patch("office_templates.office_renderer.xlsx.worksheets.process_text_list")
     def test_process_worksheet_preserves_cell_values(self, mock_process_text_list):
         """Test that non-template cell values are preserved."""
         # Cell without template
@@ -111,7 +111,7 @@ class TestProcessWorksheet(unittest.TestCase):
         self.assertEqual(plain_cell.value, "Plain text")
         self.assertEqual(self.cell1.value, "Hello, Alice")
 
-    @patch("template_reports.office_renderer.xlsx.worksheets.process_text_list")
+    @patch("office_templates.office_renderer.xlsx.worksheets.process_text_list")
     def test_list_expansion(self, mock_process_text_list):
         """Test that a cell with a list placeholder expands to multiple rows."""
         # Create a cell with a list placeholder
@@ -138,7 +138,7 @@ class TestProcessWorksheet(unittest.TestCase):
         self.worksheet.__getitem__.assert_any_call("C2")
         self.worksheet.__getitem__.assert_any_call("C3")
 
-    @patch("template_reports.office_renderer.xlsx.worksheets.process_text_list")
+    @patch("office_templates.office_renderer.xlsx.worksheets.process_text_list")
     def test_cell_overwrite_error(self, mock_process_text_list):
         """Test that CellOverwriteError is raised when trying to expand into non-empty cells."""
         # Create a cell with a list placeholder
@@ -171,8 +171,8 @@ class TestProcessWorksheet(unittest.TestCase):
                 worksheet=self.worksheet, context=self.context, check_permissions=None
             )
 
-    @patch("template_reports.office_renderer.xlsx.worksheets.replace_cell_with_image")
-    @patch("template_reports.office_renderer.xlsx.worksheets.process_text_list")
+    @patch("office_templates.office_renderer.xlsx.worksheets.replace_cell_with_image")
+    @patch("office_templates.office_renderer.xlsx.worksheets.process_text_list")
     def test_image_cell_replacement(self, mock_process_text_list, mock_replace):
         """Cells starting with %image% should trigger image replacement."""
 

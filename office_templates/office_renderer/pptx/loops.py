@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Any
 
-from template_reports.templating import resolve_tag
+from office_templates.templating import resolve_tag
 
 from ..constants import (
     LOOP_START_PATTERN_STR,
