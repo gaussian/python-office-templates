@@ -88,7 +88,7 @@ class TestProcessChart(unittest.TestCase):
         ):
 
             # Call process_chart
-            process_chart(dummy_chart, context, perm_user=None)
+            process_chart(dummy_chart, context, None)
 
         # Verify that load_workbook was called with the BytesIO instance
         mock_openpyxl.load_workbook.assert_called_once_with(mock_bytesio)
@@ -147,7 +147,7 @@ class TestProcessChartFull(unittest.TestCase):
                 series.__class__.name = property(lambda self: "Series {{ test }}")
 
         # Now process the chart
-        process_chart(chart, context, perm_user=None)
+        process_chart(chart, context, None)
 
         # Now check that the chart's data was updated:
         # Retrieve the categories from the first plot.
@@ -205,7 +205,7 @@ class TestProcessChartFull(unittest.TestCase):
         }
 
         # Process the chart. This should update its data by expanding the list placeholders.
-        process_chart(chart, context, perm_user=None)
+        process_chart(chart, context, None)
 
         # Verify that categories were replaced by the list of user names.
         new_categories = [str(cat) for cat in chart.plots[0].categories]
@@ -236,7 +236,7 @@ class TestProcessChartFull(unittest.TestCase):
             "none_value": None,
         }
         with self.assertRaises(EmptyDataException):
-            process_chart(chart, context, perm_user=None)
+            process_chart(chart, context, None)
 
     def test_chart_with_empty_placeholder_value(self):
         """Test that a chart placeholder resolving to an empty value results in None or '' in the chart data (should fail currently)."""
@@ -259,7 +259,7 @@ class TestProcessChartFull(unittest.TestCase):
             "none_value": None,
             "empty_value": "",
         }
-        process_chart(chart, context, perm_user=None)
+        process_chart(chart, context, None)
         # Check series values
         values_1 = list(chart.series[0].values)
         self.assertEqual(values_1[0], 0.0)

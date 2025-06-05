@@ -12,7 +12,7 @@ def compose_pptx(
     slide_specs: list[dict],
     global_context: dict,
     output,
-    perm_user=None,
+    check_permissions=None,
     use_tagged_layouts=False,
     use_all_slides_as_layouts_by_title=False,
 ):
@@ -24,7 +24,7 @@ def compose_pptx(
         slide_specs: List of slide dictionaries, each containing 'layout' key and context data
         global_context: Global context dictionary
         output: Output file path or file-like object
-        perm_user: Permission user object
+        check_permissions: Permission checking function
         use_tagged_layouts: If True, include slides with % layout XXX % tags
         use_all_slides_as_layouts_by_title: If True, use all slides as layouts by title
 
@@ -105,7 +105,7 @@ def compose_pptx(
                 # Process the slide spec in case there are any template variables
                 for key, value in slide_spec.items():
                     slide_spec[key] = process_text_recursive(
-                        value, global_context, perm_user
+                        value, global_context, check_permissions
                     )
 
                 # Prepare slide context
@@ -129,7 +129,7 @@ def compose_pptx(
                     new_slide,
                     slide_context,
                     slide_number,
-                    perm_user,
+                    check_permissions,
                     errors,
                 )
 

@@ -97,7 +97,7 @@ class TestRendererIntegration(unittest.TestCase):
             self.temp_input,
             self.context,
             self.temp_output,
-            perm_user=None,
+            None,
         )
         self.assertIsNone(errors)
 
@@ -152,7 +152,7 @@ class TestRendererIntegration(unittest.TestCase):
         }
         context = {"user": program["users"][0], "program": program}
         # Render
-        rendered, errors = render_pptx(temp_input, context, temp_output, perm_user=None)
+        rendered, errors = render_pptx(temp_input, context, temp_output, None)
         self.assertIsNone(errors)
         prs_out = Presentation(rendered)
         table_shape_out = None
@@ -199,7 +199,7 @@ class TestRendererIntegration(unittest.TestCase):
         # Add dummy callable to context
         self.context["dummy"] = DummyCallable()
         rendered, errors = render_pptx(
-            self.temp_input, self.context, self.temp_output, perm_user=None
+            self.temp_input, self.context, self.temp_output, None
         )
         self.assertIsNone(errors)
         prs_out = Presentation(rendered)
@@ -226,7 +226,7 @@ class TestRendererIntegration(unittest.TestCase):
         self.prs.save(self.temp_input)
 
         rendered, errors = render_pptx(
-            self.temp_input, self.context, self.temp_output, perm_user=None
+            self.temp_input, self.context, self.temp_output, None
         )
         self.assertIsNone(errors)
 
@@ -254,7 +254,7 @@ class TestRendererIntegration(unittest.TestCase):
         self.prs.save(self.temp_input)
 
         rendered, errors = render_pptx(
-            self.temp_input, self.context, self.temp_output, perm_user=None
+            self.temp_input, self.context, self.temp_output, None
         )
         self.assertIsNone(errors)
 

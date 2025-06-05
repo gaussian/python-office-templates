@@ -1,3 +1,4 @@
+from typing import Callable, Optional
 from template_reports.templating import process_text
 from .exceptions import UnterminatedTagException
 
@@ -43,11 +44,12 @@ def merge_split_placeholders(paragraph):
     return paragraph
 
 
-def process_paragraph(paragraph, context, perm_user, mode="normal"):
+def process_paragraph(paragraph, context, check_permissions, mode="normal"):
     """
     Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
     Then process each run's text with process_text.
     """
+    
     # Use the helper to merge runs containing split placeholders.
     paragraph = merge_split_placeholders(paragraph)
 
@@ -56,7 +58,7 @@ def process_paragraph(paragraph, context, perm_user, mode="normal"):
         result = process_text(
             text=current_text,
             context=context,
-            perm_user=perm_user,
+            check_permissions=check_permissions,
             mode=mode,
             fail_if_empty=True,
         )

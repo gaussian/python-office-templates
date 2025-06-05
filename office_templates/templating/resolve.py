@@ -1,5 +1,6 @@
 import re
 import datetime
+from typing import Callable, Optional
 
 from .exceptions import BadTagException, MissingDataException, TagCallableException
 from .formatting import format_value
@@ -9,7 +10,11 @@ from .permissions import enforce_permissions
 BAD_SEGMENT_PATTERN = re.compile(r"^[#%]*$")
 
 
-def resolve_formatted_tag(expr: str, context, perm_user=None):
+def resolve_formatted_tag(
+    expr: str,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]] = None,
+):
     """
     Resolve a template tag expression and return its final value.
 
@@ -58,7 +63,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
     Parameters:
       expr (str): The complete tag expression (without the double curly braces) to be resolved.
       context (dict): The context dictionary containing variables used during tag resolution.
-      perm_user: The user object for permission checking.
+      check_permissions: The permission checking function that takes an object and returns bool.
 
     Returns:
       The final resolved value of the tag, which may be a string, numeric value, datetime, or list.
@@ -67,7 +72,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
       BadTagException: When the tag contains unexpected curly braces or formatting issues.
     """
     # First, replace sub-tags enclosed in $ with their corresponding resolved values.
-    expr = substitute_inner_tags(expr, context, perm_user)
+    expr = substitute_inner_tags(expr, context, check_permissions)
 
     if "{" in expr or "}" in expr:
         raise BadTagException(
@@ -126,7 +131,7 @@ def resolve_formatted_tag(expr: str, context, perm_user=None):
             break
 
     # Resolve the tag expression (without the formatting part).
-    value = resolve_tag(value_expr, context, perm_user=perm_user)
+    value = resolve_tag(value_expr, context, check_permissions=check_permissions)
 
     # Perform mathematical operations if applicable.
     if math_operator and math_operand is not None:
@@ -163,7 +168,9 @@ def apply_math_operator(value, math_operator, operand):
     return value
 
 
-def substitute_inner_tags(expr: str, context, perm_user=None) -> str:
+def substitute_inner_tags(
+    expr: str, context, check_permissions: Optional[Callable[[object], bool]] = None
+) -> str:
     """
     Replace any sub-tags embedded within a tag expression. A sub-tag is any substring
     within a tag that is enclosed between dollar signs ($). For example, in a tag like:
@@ -178,7 +185,7 @@ def substitute_inner_tags(expr: str, context, perm_user=None) -> str:
     Parameters:
       expr (str): The original tag expression possibly containing inner sub-tags.
       context (dict): A dictionary holding variable names and their values used while resolving tags.
-      perm_user: The user for permission enforcement during tag resolution.
+      check_permissions: The permission checking function for enforcement during tag resolution.
 
     Returns:
       A new string where all inner sub-tags have been replaced with their corresponding values.
@@ -188,13 +195,15 @@ def substitute_inner_tags(expr: str, context, perm_user=None) -> str:
     def replace_func(match):
         inner_expr = match.group(1).strip()
         # Resolve the inner expression using the same tag parser.
-        resolved = resolve_formatted_tag(inner_expr, context, perm_user)
+        resolved = resolve_formatted_tag(inner_expr, context, check_permissions)
         return str(resolved)
 
     return pattern.sub(replace_func, expr)
 
 
-def resolve_tag(expr, context, perm_user=None):
+def resolve_tag(
+    expr, context, check_permissions: Optional[Callable[[object], bool]] = None
+):
     """
     Resolve a dotted tag expression using the provided context. The expression can consist
     of multiple segments separated by periods. Each segment may represent:
@@ -211,7 +220,7 @@ def resolve_tag(expr, context, perm_user=None):
     Parameters:
       expr (str): The dotted expression to be resolved.
       context (dict): The dictionary with variables available for resolution.
-      perm_user: The user object for enforcing permissions.
+      check_permissions: The permission checking function for enforcing permissions.
 
     Returns:
       The resolved value after processing all segments. If any segment returns None, an empty string is returned.
@@ -234,7 +243,7 @@ def resolve_tag(expr, context, perm_user=None):
 
     current = context
     for seg in segments:
-        current = resolve_segment(current, seg, perm_user=perm_user)
+        current = resolve_segment(current, seg, check_permissions=check_permissions)
         if current is None:
             return ""
     return current
@@ -257,7 +266,9 @@ def split_expression(expr):
     return re.split(r"\.(?![^\[]*\])", expr)
 
 
-def resolve_segment(current, segment, perm_user=None):
+def resolve_segment(
+    current, segment, check_permissions: Optional[Callable[[object], bool]] = None
+):
     """
     Resolve a single segment of a dotted tag expression.
 
@@ -276,7 +287,7 @@ def resolve_segment(current, segment, perm_user=None):
     Parameters:
       current: The current object (or list of objects) being resolved.
       segment (str): The individual segment to resolve.
-      perm_user: The user object for permission enforcement.
+      check_permissions: The permission checking function for enforcement.
 
     Returns:
       The value obtained after resolving the segment. If the segment leads to a list and further resolution is required,
@@ -308,7 +319,7 @@ def resolve_segment(current, segment, perm_user=None):
     if isinstance(current, list):
         results = []
         for item in current:
-            res = resolve_segment(item, segment, perm_user=perm_user)
+            res = resolve_segment(item, segment, check_permissions=check_permissions)
             if isinstance(res, list):
                 results.extend(res)
             else:
@@ -364,5 +375,5 @@ def resolve_segment(current, segment, perm_user=None):
                 if all(evaluate_condition(item, cond) for cond in conditions)
             ]
     # Enforce permissions on the filtered result.
-    value = enforce_permissions(value, perm_user)
+    value = enforce_permissions(value, check_permissions)
     return value

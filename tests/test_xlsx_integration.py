@@ -5,7 +5,8 @@ from unittest.mock import patch
 from openpyxl import Workbook, load_workbook
 
 from template_reports.office_renderer import render_xlsx
-from template_reports.templating.permissions import PermissionDeniedException
+
+from tests.utils import has_view_permission
 
 
 # Dummy objects for integration testing
@@ -24,6 +25,7 @@ class DummyDepartment:
     def __init__(self, name, budget):
         self.name = name
         self.budget = budget
+        self._meta = True  # Make it look like a Django object
 
     def __str__(self):
         return self.name
@@ -99,7 +101,7 @@ class TestXlsxIntegration(unittest.TestCase):
         """Test the full integration of the XLSX renderer."""
         # Run the renderer
         rendered, errors = render_xlsx(
-            self.temp_input, self.context, self.temp_output, perm_user=None
+            self.temp_input, self.context, self.temp_output, None
         )
 
         self.assertIsNone(errors)
@@ -138,8 +140,11 @@ class TestXlsxIntegration(unittest.TestCase):
         with open(self.temp_input, "rb") as input_file:
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as output_file:
                 # Run the renderer with file objects
+                check_permissions = lambda obj: has_view_permission(
+                    obj, self.request_user
+                )
                 rendered, errors = render_xlsx(
-                    input_file, self.context, output_file, perm_user=self.request_user
+                    input_file, self.context, output_file, check_permissions
                 )
 
                 self.assertIsNone(errors)
@@ -171,24 +176,16 @@ class TestXlsxIntegration(unittest.TestCase):
         deny_dept = DummyDepartment("DenyAccess", 50000)
         deny_context = {"deny_obj": deny_dept}
 
-        # This should manually throw a PermissionDeniedException to test error handling
-        with patch(
-            "template_reports.templating.permissions._check_permissions"
-        ) as mock_check:
-            # Force a permission exception
-            mock_check.side_effect = PermissionDeniedException(
-                "Permission denied for DenyAccess"
-            )
+        # Run renderer - should naturally fail due to permission denied
+        check_permissions = lambda obj: has_view_permission(obj, self.request_user)
+        rendered, errors = render_xlsx(
+            test_input, deny_context, test_output, check_permissions
+        )
 
-            # Run renderer with mocked permission check
-            rendered, errors = render_xlsx(
-                test_input, deny_context, test_output, perm_user=self.request_user
-            )
-
-            # Should have errors due to permission denied
-            self.assertIsNotNone(errors)
-            self.assertTrue(len(errors) > 0)
-            self.assertIn("Permission denied", str(errors[0]))
+        # Should have errors due to permission denied
+        self.assertIsNotNone(errors)
+        self.assertTrue(len(errors) > 0)
+        self.assertIn("Permission denied", str(errors[0]))
 
         # Clean up
         for temp_file in [test_input, test_output]:
@@ -218,9 +215,7 @@ class TestXlsxIntegration(unittest.TestCase):
 
         try:
             # This should raise a CellOverwriteError when rendering
-            rendered, errors = render_xlsx(
-                temp_input, context, temp_output, perm_user=None
-            )
+            rendered, errors = render_xlsx(temp_input, context, temp_output, None)
 
             # Verify that rendering failed with appropriate error
             self.assertIsNone(rendered)
@@ -261,7 +256,7 @@ class TestXlsxIntegration(unittest.TestCase):
         self.wb.save(self.temp_input)
 
         rendered, errors = render_xlsx(
-            self.temp_input, self.context, self.temp_output, perm_user=None
+            self.temp_input, self.context, self.temp_output, None
         )
         self.assertIsNone(errors)
         output_wb = load_workbook(rendered)
@@ -284,7 +279,7 @@ class TestXlsxIntegration(unittest.TestCase):
         self.wb.save(self.temp_input)
 
         rendered, errors = render_xlsx(
-            self.temp_input, self.context, self.temp_output, perm_user=None
+            self.temp_input, self.context, self.temp_output, None
         )
         self.assertIsNone(errors)
 

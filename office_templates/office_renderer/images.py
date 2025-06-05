@@ -50,7 +50,7 @@ def replace_shape_with_image(
     shape,
     slide,
     context: dict,
-    perm_user=None,
+    check_permissions=None,
     url: str | None = None,
     mode: str | None = None,
 ):
@@ -66,7 +66,7 @@ def replace_shape_with_image(
     url = process_text(
         url,
         context=context,
-        perm_user=perm_user,
+        check_permissions=check_permissions,
         mode="normal",
     )
 
@@ -111,7 +111,7 @@ def replace_cell_with_image(
     cell,
     worksheet,
     context: dict,
-    perm_user=None,
+    check_permissions=None,
     url: str | None = None,
     mode: str | None = None,
 ):
@@ -127,7 +127,7 @@ def replace_cell_with_image(
     url = process_text(
         url,
         context=context,
-        perm_user=perm_user,
+        check_permissions=check_permissions,
         mode="normal",
     )
 

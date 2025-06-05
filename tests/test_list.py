@@ -42,7 +42,7 @@ class TestProcessTextList(unittest.TestCase):
         """Test processing a list of simple text items."""
         items = ["Hello, {{ user.name }}", "Email: {{ user.email }}"]
         result = process_text_list(
-            items=items, context=self.context, perm_user=None, as_float=False
+            items=items, context=self.context, check_permissions=None, as_float=False
         )
         self.assertEqual(result, ["Hello, Alice", "Email: alice@example.com"])
 
@@ -50,7 +50,7 @@ class TestProcessTextList(unittest.TestCase):
         """Test table mode expansion for a single item with a list-resolving placeholder."""
         items = ["User: {{ users.name }}"]
         result = process_text_list(
-            items=items, context=self.context, perm_user=None, as_float=False
+            items=items, context=self.context, check_permissions=None, as_float=False
         )
         self.assertEqual(result, ["User: Bob", "User: Carol"])
 
@@ -58,7 +58,7 @@ class TestProcessTextList(unittest.TestCase):
         """Test that items are converted to float when as_float is True."""
         items = ["{{ numbers.0 }}", "{{ numbers.1 }}", "{{ numbers.2 }}"]
         result = process_text_list(
-            items=items, context=self.context, perm_user=None, as_float=True
+            items=items, context=self.context, check_permissions=None, as_float=True
         )
         self.assertEqual(result, [1.0, 2.0, 3.0])
 
@@ -68,7 +68,7 @@ class TestProcessTextList(unittest.TestCase):
         result = process_text_list(
             items=items,
             context=self.context,
-            perm_user=None,
+            check_permissions=None,
             as_float=True,
             fail_if_not_float=False,
         )
@@ -81,7 +81,7 @@ class TestProcessTextList(unittest.TestCase):
             process_text_list(
                 items=items,
                 context=self.context,
-                perm_user=None,
+                check_permissions=None,
                 as_float=True,
                 fail_if_not_float=True,
             )
@@ -93,7 +93,7 @@ class TestProcessTextList(unittest.TestCase):
         result = process_text_list(
             items=items,
             context=self.context,
-            perm_user=None,
+            check_permissions=None,
             as_float=True,
             fail_if_not_float=False,
         )
@@ -101,7 +101,7 @@ class TestProcessTextList(unittest.TestCase):
         result = process_text_list(
             items=items,
             context=self.context,
-            perm_user=None,
+            check_permissions=None,
             as_float=True,
             fail_if_not_float=True,
         )
@@ -114,7 +114,7 @@ class TestProcessTextList(unittest.TestCase):
         result = process_text_list(
             items=items,
             context=self.context,
-            perm_user=None,
+            check_permissions=None,
             as_float=True,
             fail_if_not_float=False,
         )
@@ -122,7 +122,7 @@ class TestProcessTextList(unittest.TestCase):
         result = process_text_list(
             items=items,
             context=self.context,
-            perm_user=None,
+            check_permissions=None,
             as_float=True,
             fail_if_not_float=True,
         )

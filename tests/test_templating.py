@@ -10,6 +10,8 @@ from template_reports.templating.exceptions import (
 )
 from template_reports.templating.core import process_text
 
+from tests.utils import has_view_permission
+
 
 # ----- Dummy Classes for Testing -----
 
@@ -87,7 +89,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         expected = self.now.strftime("%B %d, %Y")
@@ -102,7 +104,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         expected = ", ".join(u.email for u in self.program["users"])
@@ -116,7 +118,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         expected = self.context["meeting_time"].strftime("%B %d, %Y")
@@ -129,7 +131,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
             result2 = process_text(
                 tpl2,
                 self.context,
-                perm_user=None,
+                check_permissions=None,
                 mode="normal",
             )
         expected2 = self.now.strftime("%B %d, %Y")
@@ -141,7 +143,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         # Expected: "The program is: Test Program. Users: alice-three@example.com, bob@example.com, deny@example.com are active."
@@ -156,7 +158,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         # Expected: "All emails: alice-three@example.com, bob@example.com, deny@example.com are active."
@@ -171,7 +173,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         expected = f"All emails: {', '.join(u.email for u in self.program['users'])}. User is: {self.user1.name}."
@@ -182,10 +184,11 @@ class TestTemplatingNormalMode(unittest.TestCase):
         tpl = "{{ program.users.email }}"
         # Now, with permission checking enabled, self.user3 ("DenyUser") should be filtered out.
         with self.assertRaises(PermissionDeniedException):
+            check_permissions = lambda obj: has_view_permission(obj, self.request_user)
             process_text(
                 tpl,
                 self.context,
-                perm_user=self.request_user,
+                check_permissions=check_permissions,
                 mode="normal",
             )
 
@@ -194,7 +197,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "Empty tag: .")
@@ -205,7 +208,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
             process_text(
                 tpl,
                 self.context,
-                perm_user=None,
+                check_permissions=None,
                 mode="normal",
             )
 
@@ -217,7 +220,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "Display: ALICE")
@@ -227,7 +230,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         # The filtered list will join a single email into a string.
@@ -242,10 +245,11 @@ class TestTemplatingNormalMode(unittest.TestCase):
         denier = DenyAllUser()
         tpl = "{{ program.users.email }}"
         with self.assertRaises(PermissionDeniedException):
+            check_permissions = lambda obj: has_view_permission(obj, denier)
             process_text(
                 tpl,
                 self.context,
-                perm_user=denier,
+                check_permissions=check_permissions,
                 mode="normal",
             )
 
@@ -255,7 +259,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         self.assertEqual(result, "100")
@@ -266,7 +270,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         self.assertEqual(result, ["100"])
@@ -277,7 +281,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(
@@ -289,7 +293,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, tpl)
@@ -301,7 +305,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         expected_date = self.now.strftime("%B %d, %Y")
@@ -314,7 +318,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "The count is 42")
@@ -325,7 +329,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "Price: 19.95")
@@ -336,7 +340,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "14.0")
@@ -347,7 +351,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "6.0")
@@ -358,7 +362,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "3.14")
@@ -369,7 +373,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "8.15")
@@ -380,7 +384,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "HELLO WORLD")
@@ -391,7 +395,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "11")
@@ -402,7 +406,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "hello world")
@@ -413,7 +417,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "HELLO WORLD")
@@ -424,7 +428,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         self.assertEqual(result, "Hello World")
@@ -434,7 +438,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="normal",
         )
         # The filtered list will join a single email into a string, and then multiply by 2 to give 4.
@@ -473,7 +477,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         expected = self.now.strftime("%B %d, %Y")
@@ -485,7 +489,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         expected = [str(u.email) for u in self.program["users"]]
@@ -497,7 +501,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         # Expect a list with one entry per user.
@@ -510,7 +514,7 @@ class TestTemplatingTableMode(unittest.TestCase):
             process_text(
                 tpl,
                 self.context,
-                perm_user=None,
+                check_permissions=None,
                 mode="table",
             )
 
@@ -520,7 +524,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         self.assertEqual(result, "100")
@@ -531,7 +535,7 @@ class TestTemplatingTableMode(unittest.TestCase):
         result = process_text(
             tpl,
             self.context,
-            perm_user=None,
+            check_permissions=None,
             mode="table",
         )
         self.assertEqual(result, ["100"])
@@ -547,10 +551,11 @@ class TestTemplatingTableMode(unittest.TestCase):
         denier = DenyAllUser()
         tpl = "{{ program.users.email }}"
         with self.assertRaises(PermissionDeniedException):
+            check_permissions = lambda obj: has_view_permission(obj, denier)
             process_text(
                 tpl,
                 self.context,
-                perm_user=denier,
+                check_permissions=check_permissions,
                 mode="table",
             )
 
