@@ -1,7 +1,5 @@
-from typing import Callable, Optional
+from typing import IO, Callable, Optional
 from pptx import Presentation
-
-from template_reports.templating.core import process_text
 
 from ..charts import process_chart
 from ..images import (
@@ -19,9 +17,9 @@ from .utils import remove_shape
 
 
 def render_pptx(
-    template,
+    template: str | IO[bytes],
     context: dict,
-    output,
+    output: str | IO[bytes],
     check_permissions: Optional[Callable[[object], bool]],
 ):
     """

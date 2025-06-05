@@ -1,12 +1,13 @@
-from typing import Callable, Optional
+from typing import IO, Callable, Optional
+
 from ..utils import get_load_workbook
 from .worksheets import process_worksheet
 
 
 def render_xlsx(
-    template,
+    template: str | IO[bytes],
     context: dict,
-    output,
+    output: str | IO[bytes],
     check_permissions: Optional[Callable[[object], bool]],
 ):
     """
