@@ -1,8 +1,14 @@
+from typing import Callable, Optional
 from ..utils import get_load_workbook
 from .worksheets import process_worksheet
 
 
-def render_xlsx(template, context, output, check_permissions):
+def render_xlsx(
+    template,
+    context: dict,
+    output,
+    check_permissions: Optional[Callable[[object], bool]],
+):
     """
     Render the XLSX template (a path string or a file-like object) using the provided context and save to output.
     'output' can be a path string or a file-like object. If it's a file-like object, it will be rewound after saving.

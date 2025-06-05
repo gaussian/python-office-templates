@@ -2,14 +2,14 @@
 Permissions utility module for the templating system.
 """
 
-from typing import Callable
+from typing import Callable, Optional
 
 from .exceptions import PermissionDeniedException
 
 
 def enforce_permissions(
     value,
-    check_permissions: Callable[[object], bool],
+    check_permissions: Optional[Callable[[object], bool]],
     raise_exception=True,
 ):
     """

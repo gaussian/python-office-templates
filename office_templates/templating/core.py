@@ -116,7 +116,9 @@ def process_text_recursive(
 ):
 
     if isinstance(obj, str):
-        return process_text(obj, context, check_permissions, mode, delimiter, fail_if_empty)
+        return process_text(
+            obj, context, check_permissions, mode, delimiter, fail_if_empty
+        )
 
     elif isinstance(obj, list):
         return [

@@ -44,12 +44,17 @@ def merge_split_placeholders(paragraph):
     return paragraph
 
 
-def process_paragraph(paragraph, context, check_permissions, mode="normal"):
+def process_paragraph(
+    paragraph,
+    context,
+    check_permissions: Optional[Callable[[object], bool]],
+    mode="normal",
+):
     """
     Merge placeholders in a paragraph if a single placeholder ({{ ... }}) is split across multiple runs.
     Then process each run's text with process_text.
     """
-    
+
     # Use the helper to merge runs containing split placeholders.
     paragraph = merge_split_placeholders(paragraph)
 

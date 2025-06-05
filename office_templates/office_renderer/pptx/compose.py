@@ -1,3 +1,5 @@
+from typing import Callable, Optional
+
 from pptx import Presentation
 
 from template_reports.templating.core import process_text_recursive
@@ -12,7 +14,7 @@ def compose_pptx(
     slide_specs: list[dict],
     global_context: dict,
     output,
-    check_permissions=None,
+    check_permissions: Optional[Callable[[object], bool]] = None,
     use_tagged_layouts=False,
     use_all_slides_as_layouts_by_title=False,
 ):
@@ -118,19 +120,19 @@ def compose_pptx(
                 # Handle placeholders first if provided
                 if placeholders:
                     process_placeholders(
-                        new_slide,
-                        placeholders,
-                        slide_number,
-                        errors,
+                        slide=new_slide,
+                        placeholders=placeholders,
+                        slide_number=slide_number,
+                        errors=errors,
                     )
 
                 # Process the slide
                 process_single_slide(
-                    new_slide,
-                    slide_context,
-                    slide_number,
-                    check_permissions,
-                    errors,
+                    slide=new_slide,
+                    context=slide_context,
+                    slide_number=slide_number,
+                    check_permissions=check_permissions,
+                    errors=errors,
                 )
 
             except Exception as e:

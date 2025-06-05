@@ -1,3 +1,4 @@
+from typing import Callable, Optional
 from pptx import Presentation
 
 from template_reports.templating.core import process_text
@@ -17,7 +18,12 @@ from .loops import (
 from .utils import remove_shape
 
 
-def render_pptx(template, context: dict, output, check_permissions):
+def render_pptx(
+    template,
+    context: dict,
+    output,
+    check_permissions: Optional[Callable[[object], bool]],
+):
     """
     Render the PPTX template (a path string or a file-like object) using the provided context and save to output.
     'output' can be a path string or a file-like object. If it's a file-like object, it will be rewound after saving.
@@ -32,7 +38,12 @@ def render_pptx(template, context: dict, output, check_permissions):
     errors: list[str] = []
 
     # Process loops first - identify loop sections and duplicate slides
-    slides_to_process = process_loops(prs, context, check_permissions, errors)
+    slides_to_process = process_loops(
+        prs,
+        context=context,
+        check_permissions=check_permissions,
+        errors=errors,
+    )
 
     # Process all slides including duplicated ones from loops
     for slide_info in slides_to_process:
@@ -52,7 +63,13 @@ def render_pptx(template, context: dict, output, check_permissions):
             slide_context[slide_info["loop_var"]] = slide_info["loop_item"]
 
         # Process the slide
-        process_single_slide(slide, slide_context, slide_number, check_permissions, errors)
+        process_single_slide(
+            slide=slide,
+            context=slide_context,
+            slide_number=slide_number,
+            check_permissions=check_permissions,
+            errors=errors,
+        )
 
     if errors:
         print("Rendering aborted due to the following errors:")
@@ -74,8 +91,8 @@ def render_pptx(template, context: dict, output, check_permissions):
 def process_single_slide(
     slide,
     context: dict,
-    slide_number,
-    check_permissions,
+    slide_number: int,
+    check_permissions: Optional[Callable[[object], bool]],
     errors: list[str],
 ):
     """Process a single slide with the given context."""
@@ -86,7 +103,14 @@ def process_single_slide(
             continue
 
         # Process the shape content
-        process_shape_content(shape, slide, context, slide_number, check_permissions, errors)
+        process_shape_content(
+            shape,
+            slide=slide,
+            context=context,
+            slide_number=slide_number,
+            check_permissions=check_permissions,
+            errors=errors,
+        )
 
 
 def process_shape_content(
@@ -94,7 +118,7 @@ def process_shape_content(
     slide,
     context: dict,
     slide_number: int,
-    check_permissions,
+    check_permissions: Optional[Callable[[object], bool]],
     errors: list[str],
 ):
     """Process the content of a shape based on its type."""

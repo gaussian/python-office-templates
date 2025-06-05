@@ -131,7 +131,7 @@ def resolve_formatted_tag(
             break
 
     # Resolve the tag expression (without the formatting part).
-    value = resolve_tag(value_expr, context, check_permissions=check_permissions)
+    value = resolve_tag(value_expr, context=context, check_permissions=check_permissions)
 
     # Perform mathematical operations if applicable.
     if math_operator and math_operand is not None:
@@ -169,7 +169,9 @@ def apply_math_operator(value, math_operator, operand):
 
 
 def substitute_inner_tags(
-    expr: str, context, check_permissions: Optional[Callable[[object], bool]] = None
+    expr: str,
+    context,
+    check_permissions: Optional[Callable[[object], bool]] = None,
 ) -> str:
     """
     Replace any sub-tags embedded within a tag expression. A sub-tag is any substring
@@ -202,7 +204,9 @@ def substitute_inner_tags(
 
 
 def resolve_tag(
-    expr, context, check_permissions: Optional[Callable[[object], bool]] = None
+    expr: str,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]] = None,
 ):
     """
     Resolve a dotted tag expression using the provided context. The expression can consist
@@ -249,7 +253,7 @@ def resolve_tag(
     return current
 
 
-def split_expression(expr):
+def split_expression(expr: str):
     """
     Split a dotted expression into its individual segments.
 
@@ -267,7 +271,9 @@ def split_expression(expr):
 
 
 def resolve_segment(
-    current, segment, check_permissions: Optional[Callable[[object], bool]] = None
+    current,
+    segment,
+    check_permissions: Optional[Callable[[object], bool]] = None,
 ):
     """
     Resolve a single segment of a dotted tag expression.

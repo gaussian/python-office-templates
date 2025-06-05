@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from typing import Callable, Optional
 from urllib.request import urlopen
 
 from openpyxl.drawing.image import Image as XLImage
@@ -11,7 +12,7 @@ from .constants import IMAGE_DIRECTIVES
 from .exceptions import ImageError
 
 
-def extract_image_directive(text: str | None) -> tuple[str | None, str | None]:
+def extract_image_directive(text: Optional[str]) -> tuple[Optional[str], Optional[str]]:
     """Return (url, mode) if *text* starts with an image directive."""
     if not text:
         return None, None
@@ -24,7 +25,7 @@ def extract_image_directive(text: str | None) -> tuple[str | None, str | None]:
     return None, None
 
 
-def extract_image_url(text: str | None) -> str | None:
+def extract_image_url(text: Optional[str]) -> Optional[str]:
     """Backward compatible helper returning only the URL."""
     url, _ = extract_image_directive(text)
     return url
@@ -50,9 +51,9 @@ def replace_shape_with_image(
     shape,
     slide,
     context: dict,
-    check_permissions=None,
-    url: str | None = None,
-    mode: str | None = None,
+    check_permissions: Optional[Callable[[object], bool]] = None,
+    url: Optional[str] = None,
+    mode: Optional[str] = None,
 ):
     """Replace *shape* with an image, keeping its position."""
 
@@ -63,12 +64,14 @@ def replace_shape_with_image(
     if not url:
         return
 
-    url = process_text(
+    result = process_text(
         url,
         context=context,
         check_permissions=check_permissions,
         mode="normal",
     )
+    assert isinstance(result, str), "Image URL must be a string"
+    url = result
 
     try:
         with urlopen(url) as resp:
@@ -111,9 +114,9 @@ def replace_cell_with_image(
     cell,
     worksheet,
     context: dict,
-    check_permissions=None,
-    url: str | None = None,
-    mode: str | None = None,
+    check_permissions: Optional[Callable[[object], bool]] = None,
+    url: Optional[str] = None,
+    mode: Optional[str] = None,
 ):
     """Replace the cell's value with an image anchored at the cell."""
 
@@ -124,12 +127,14 @@ def replace_cell_with_image(
     if not url:
         return
 
-    url = process_text(
+    result = process_text(
         url,
         context=context,
         check_permissions=check_permissions,
         mode="normal",
     )
+    assert isinstance(result, str), "Image URL must be a string"
+    url = result
 
     try:
         with urlopen(url) as resp:

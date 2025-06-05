@@ -1,10 +1,15 @@
+from typing import Callable, Optional
 from template_reports.templating.list import process_text_list
 
 from ..exceptions import CellOverwriteError
 from ..images import should_replace_cell_with_image, replace_cell_with_image
 
 
-def process_worksheet(worksheet, context: dict, check_permissions=None):
+def process_worksheet(
+    worksheet,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]] = None,
+):
     """
     Process a worksheet, replacing placeholders with values from the context.
     When a placeholder resolves to a list, it expands into multiple rows in the column.
