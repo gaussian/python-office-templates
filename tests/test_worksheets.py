@@ -3,6 +3,8 @@ from unittest.mock import MagicMock, patch
 from template_reports.office_renderer.xlsx.worksheets import process_worksheet
 from template_reports.office_renderer.exceptions import CellOverwriteError
 
+from tests.utils import has_view_permission
+
 
 class TestProcessWorksheet(unittest.TestCase):
     def setUp(self):
@@ -68,8 +70,11 @@ class TestProcessWorksheet(unittest.TestCase):
         ]
 
         # Call process_worksheet
+        check_permissions = lambda obj: has_view_permission(obj, self.request_user)
         process_worksheet(
-            worksheet=self.worksheet, context=self.context, perm_user=self.request_user
+            worksheet=self.worksheet,
+            context=self.context,
+            check_permissions=check_permissions,
         )
 
         # Verify cell values were updated correctly
@@ -98,7 +103,9 @@ class TestProcessWorksheet(unittest.TestCase):
         ]
 
         # Process the worksheet
-        process_worksheet(worksheet=self.worksheet, context=self.context, perm_user=None)
+        process_worksheet(
+            worksheet=self.worksheet, context=self.context, check_permissions=None
+        )
 
         # Verify plain text is preserved
         self.assertEqual(plain_cell.value, "Plain text")
@@ -120,7 +127,9 @@ class TestProcessWorksheet(unittest.TestCase):
         mock_process_text_list.return_value = ["Alice", "Bob", "Carol"]
 
         # Process the worksheet
-        process_worksheet(worksheet=self.worksheet, context=self.context, perm_user=None)
+        process_worksheet(
+            worksheet=self.worksheet, context=self.context, check_permissions=None
+        )
 
         # Verify the cell was updated with the first value
         self.assertEqual(list_cell.value, "Alice")
@@ -159,7 +168,7 @@ class TestProcessWorksheet(unittest.TestCase):
         # Process the worksheet - should raise CellOverwriteError
         with self.assertRaises(CellOverwriteError):
             process_worksheet(
-                worksheet=self.worksheet, context=self.context, perm_user=None
+                worksheet=self.worksheet, context=self.context, check_permissions=None
             )
 
     @patch("template_reports.office_renderer.xlsx.worksheets.replace_cell_with_image")
@@ -173,10 +182,12 @@ class TestProcessWorksheet(unittest.TestCase):
 
         self.worksheet.iter_cols.return_value = [[cell_img]]
 
-        process_worksheet(worksheet=self.worksheet, context=self.context, perm_user=None)
+        process_worksheet(
+            worksheet=self.worksheet, context=self.context, check_permissions=None
+        )
 
         mock_replace.assert_called_once_with(
-            cell_img, self.worksheet, context=self.context, perm_user=None
+            cell_img, self.worksheet, context=self.context, check_permissions=None
         )
         mock_process_text_list.assert_not_called()
 

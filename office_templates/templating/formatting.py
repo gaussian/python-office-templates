@@ -98,10 +98,4 @@ def format_value(value: list | str, format_expr: str):
             f"Error formatting value '{value}' with format '{format_expr}': {str(e)}"
         )
 
-    # If the format string contains a comma, split it to retrieve multiple attributes.
-    # elif "," in format_expr:
-    #     attrs = [a.strip() for a in format_expr.split(",")]
-    #     return tuple(
-    #         resolve_tag(f"{value_expr}.{attr}", context, perm_user=perm_user)
-    #         for attr in attrs
-    #     )
+

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from itertools import zip_longest
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional
 
 from pptx.chart.data import ChartData
 
@@ -15,7 +15,11 @@ if TYPE_CHECKING:
     from pptx.chart.chart import Chart
 
 
-def process_chart(chart: Chart, context: dict, perm_user):
+def process_chart(
+    chart: Chart,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]],
+):
     """
     Read the current chart data, format text fields using the provided context,
     then update the chart with the new data.
@@ -23,18 +27,18 @@ def process_chart(chart: Chart, context: dict, perm_user):
     Parameters:
         chart: a pptx.chart.chart.Chart object.
         context: a dict used for formatting placeholders in text values.
-        perm_user: passed along for consistency (not used in this example).
+        check_permissions: function to check permissions for objects.
     """
 
     # Common kwargs
     process_kwargs = dict(
         context=context,
-        perm_user=perm_user,
+        check_permissions=check_permissions,
         fail_if_empty=True,
     )
 
     # (1) Process series DATA in the chart (excluding series names and categories).
-    all_processed_series_data = process_series_data(chart, context, perm_user)
+    all_processed_series_data = process_series_data(chart, context, check_permissions)
     # Transpose the data if the chart's axes are swapped.
     if chart_axes_are_swapped(chart):
         all_processed_series_data = list(zip(*all_processed_series_data))
@@ -104,7 +108,11 @@ def get_raw_chart_data(chart: Chart):
     return [[cell.value for cell in col] for col in worksheet.iter_cols()]
 
 
-def process_series_data(chart: Chart, context, perm_user):
+def process_series_data(
+    chart: Chart,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]],
+):
     """
     Process the data in a chart, excluding the series names and categories.
 
@@ -127,8 +135,8 @@ def process_series_data(chart: Chart, context, perm_user):
         process_text_list(
             # Skip the first row, which is handled by the ChartData series/categories.
             col[1:],
-            context,
-            perm_user,
+            context=context,
+            check_permissions=check_permissions,
             as_float=True,
             fail_if_not_float=True,
             fail_if_empty=False,

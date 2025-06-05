@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 
 from template_reports.office_renderer import render_xlsx
 
+from tests.utils import has_view_permission
+
 
 class TestXlsxUnit(unittest.TestCase):
     def setUp(self):
@@ -49,36 +51,33 @@ class TestXlsxUnit(unittest.TestCase):
             template=self.temp_input,
             context=self.context,
             output=self.temp_output,
-            perm_user=self.request_user,
+            check_permissions=lambda obj: has_view_permission(obj, self.request_user),
         )
 
         # Verify load_workbook was called with the file path
         mock_load_func.assert_called_once_with(self.temp_input)
 
-        # Verify process_worksheet was called for each sheet
+        # Verify the calls made to process_worksheet
+        # Check that it was called twice
         self.assertEqual(mock_process_worksheet.call_count, 2)
 
-        # For Sheet1
-        mock_process_worksheet.assert_any_call(
-            worksheet=mock_worksheet,
-            context={
-                "user": {"name": "Alice", "email": "alice@example.com"},
-                "company": "Example Corp",
-                "sheet_name": "Sheet1",
-            },
-            perm_user=self.request_user,
-        )
+        # Check the first call (Sheet1)
+        first_call_args, first_call_kwargs = mock_process_worksheet.call_args_list[0]
+        self.assertEqual(first_call_kwargs["worksheet"], mock_worksheet)
+        self.assertEqual(first_call_kwargs["context"]["sheet_name"], "Sheet1")
+        self.assertEqual(first_call_kwargs["context"]["user"]["name"], "Alice")
+        self.assertIsNotNone(
+            first_call_kwargs["check_permissions"]
+        )  # Lambda function present
 
-        # For Sheet2
-        mock_process_worksheet.assert_any_call(
-            worksheet=mock_worksheet,
-            context={
-                "user": {"name": "Alice", "email": "alice@example.com"},
-                "company": "Example Corp",
-                "sheet_name": "Sheet2",
-            },
-            perm_user=self.request_user,
-        )
+        # Check the second call (Sheet2)
+        second_call_args, second_call_kwargs = mock_process_worksheet.call_args_list[1]
+        self.assertEqual(second_call_kwargs["worksheet"], mock_worksheet)
+        self.assertEqual(second_call_kwargs["context"]["sheet_name"], "Sheet2")
+        self.assertEqual(second_call_kwargs["context"]["user"]["name"], "Alice")
+        self.assertIsNotNone(
+            second_call_kwargs["check_permissions"]
+        )  # Lambda function present
 
         # Verify workbook.save was called with the output path
         mock_workbook.save.assert_called_once_with(self.temp_output)
@@ -112,7 +111,7 @@ class TestXlsxUnit(unittest.TestCase):
             template=mock_input_file,
             context=self.context,
             output=mock_output_file,
-            perm_user=self.request_user,
+            check_permissions=lambda obj: has_view_permission(obj, self.request_user),
         )
 
         # Verify file handling
@@ -155,7 +154,7 @@ class TestXlsxUnit(unittest.TestCase):
                 template=self.temp_input,
                 context=self.context,
                 output=self.temp_output,
-                perm_user=self.request_user,
+                check_permissions=lambda obj: has_view_permission(obj, self.request_user),
             )
 
         # Verify error handling

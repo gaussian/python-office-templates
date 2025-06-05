@@ -1,4 +1,5 @@
 import re
+from typing import IO
 from pptx import Presentation
 
 from .charts import get_raw_chart_data
@@ -44,7 +45,7 @@ def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:
     }
 
 
-def extract_context_keys_from_xlsx(template) -> dict[str, list[str]]:
+def extract_context_keys_from_xlsx(template: str | IO[bytes]) -> dict[str, list[str]]:
     """
     Iterate through all worksheets and cells in the XLSX file (from a file path or file-like object),
     and return a dict with:
@@ -52,7 +53,7 @@ def extract_context_keys_from_xlsx(template) -> dict[str, list[str]]:
         - object_fields: sorted list of unique object keys
     """
     load_workbook = get_load_workbook()
-    
+
     # Load the workbook (support template as a file path or file-like object)
     if isinstance(template, str):
         workbook = load_workbook(template)
@@ -67,7 +68,7 @@ def extract_context_keys_from_xlsx(template) -> dict[str, list[str]]:
     texts = []
     for sheet_name in workbook.sheetnames:
         worksheet = workbook[sheet_name]
-        
+
         # Iterate through all cells that have values
         for row in worksheet.iter_rows():
             for cell in row:
@@ -86,7 +87,7 @@ def extract_context_keys_from_xlsx(template) -> dict[str, list[str]]:
     }
 
 
-def extract_context_keys_from_pptx(template) -> dict[str, list[str]]:
+def extract_context_keys_from_pptx(template: str | IO[bytes]) -> dict[str, list[str]]:
     """
     Iterate through all slides, shapes, paragraphs and table cells in the PPTX (from a file path or file-like object),
     merging split placeholders, and return a dict with:
@@ -149,18 +150,18 @@ def extract_context_keys_from_pptx(template) -> dict[str, list[str]]:
     }
 
 
-def extract_context_keys(template) -> dict[str, list[str]]:
+def extract_context_keys(template: str | IO[bytes]) -> dict[str, list[str]]:
     """
     Iterate through all slides/worksheets and their content in PPTX/XLSX files (from a file path or file-like object),
     and return a dict with:
         - simple_fields: sorted list of unique simple keys
         - object_fields: sorted list of unique object keys
-    
+
     This function automatically detects the file type and uses the appropriate extraction method.
     """
     # Identify the file type
     file_type = identify_file_type(template)
-    
+
     if file_type == "pptx":
         return extract_context_keys_from_pptx(template)
     elif file_type == "xlsx":

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import Callable, Optional
 
 from pptx.table import _Cell
 
@@ -8,7 +9,11 @@ from .exceptions import CellOverwriteError, TableError
 from .paragraphs import process_paragraph
 
 
-def process_table_cell(cell, context: dict, perm_user=None):
+def process_table_cell(
+    cell,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]] = None,
+):
     """
     Process the text in a table cell.
 
@@ -16,6 +21,7 @@ def process_table_cell(cell, context: dict, perm_user=None):
     If the result is a list, fill the column with the list items (and expand table if not enough room).
     Otherwise, process each paragraph in "normal" mode.
     """
+
     cell_text = cell.text.strip()
 
     matches = get_matching_tags(cell_text)
@@ -25,7 +31,7 @@ def process_table_cell(cell, context: dict, perm_user=None):
         result = process_text(
             text=cell_text,
             context=context,
-            perm_user=perm_user,
+            check_permissions=check_permissions,
             mode="table",
             fail_if_empty=False,
         )
@@ -40,7 +46,7 @@ def process_table_cell(cell, context: dict, perm_user=None):
             process_paragraph(
                 paragraph=paragraph,
                 context=context,
-                perm_user=perm_user,
+                check_permissions=check_permissions,
                 mode="normal",
             )
 

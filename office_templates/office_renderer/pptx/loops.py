@@ -5,7 +5,7 @@ Functions to handle loop functionality in PPTX templates.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Iterable, Optional, Any
+from typing import TYPE_CHECKING, Callable, Iterable, Optional, Any
 
 from template_reports.templating import resolve_tag
 
@@ -61,15 +61,20 @@ def is_loop_end(shape) -> bool:
 def get_collection_from_collection_tag(
     collection_tag: str,
     context: dict,
-    perm_user,
+    check_permissions: Optional[Callable[[object], bool]],
 ) -> tuple[Optional[Iterable[Any]], Optional[str]]:
     """
     Given a collection tag, resolve it to a collection in the context.
     This function is a placeholder and should be implemented based on your context resolution logic.
     """
+
     # Get the collection from the context using resolve_tag
     try:
-        collection = resolve_tag(collection_tag, context, perm_user)
+        collection = resolve_tag(
+            collection_tag,
+            context=context,
+            check_permissions=check_permissions,
+        )
     except Exception as e:
         return (
             None,
@@ -93,7 +98,12 @@ def get_collection_from_collection_tag(
     return collection, None
 
 
-def process_loops(prs: Presentation, context: dict, perm_user, errors: list[str]):
+def process_loops(
+    prs: Presentation,
+    context: dict,
+    check_permissions: Optional[Callable[[object], bool]],
+    errors: list[str],
+):
     """
     Process loops in the presentation:
     - Identify loop sections (slides between %loop var in collection% and %endloop%)
@@ -136,7 +146,7 @@ def process_loops(prs: Presentation, context: dict, perm_user, errors: list[str]
                 if loop_variable_name and collection_tag:
                     has_loop_start = True
                     loop_collection, error = get_collection_from_collection_tag(
-                        collection_tag, context, perm_user
+                        collection_tag, context, check_permissions
                     )
                     if error:
                         errors.append(f"Error on slide {i + 1}: {error}")

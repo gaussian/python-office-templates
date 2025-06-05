@@ -7,12 +7,12 @@ from template_reports.templating.resolve import (
     split_expression,
     resolve_segment,
 )
-from template_reports.templating.parse import get_nested_attr
 from template_reports.templating.exceptions import (
     BadTagException,
     MissingDataException,
-    TagCallableException,
-)  # Added import
+)
+
+from tests.utils import has_view_permission
 
 
 # Dummy class for testing nested attribute and filtering.
@@ -153,7 +153,11 @@ class TestParser(unittest.TestCase):
         req_user = RequestUser()
 
         expr = "container.users[is_active=True, name=Allow]"
-        resolved = resolve_formatted_tag(expr, context, perm_user=req_user)
+        # Create check_permissions lambda
+        check_permissions = lambda obj: has_view_permission(obj, req_user)
+        resolved = resolve_formatted_tag(
+            expr, context, check_permissions=check_permissions
+        )
         self.assertEqual(resolved, [users[0]])
 
     def test_empty_expression(self):

@@ -5,6 +5,7 @@ This module provides helper functions for working with Microsoft Office document
 including file type detection and workbook loading utilities.
 """
 
+from typing import IO
 import zipfile
 
 from .exceptions import UnsupportedFileType
@@ -33,7 +34,7 @@ def get_load_workbook():
     return load_workbook
 
 
-def identify_file_type(file_input):
+def identify_file_type(file_input: str | IO[bytes]):
     """
     Identifies the type of Office file by examining its internal structure.
 
