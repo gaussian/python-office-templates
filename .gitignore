@@ -99,4 +99,7 @@ venv.bak/
 # Test output creating
 office_templates/raw_templates/dummy_test_output.pptx
 
+# Temp files
+~$*.pptx
+
 .DS_Store

@@ -4,6 +4,8 @@ import re
 def get_nested_attr(obj, attr):
     """
     Retrieve an attribute from an object or dictionary using a chain of lookups separated by "__".
+    
+    When a part is numeric and the object is a list or tuple, list indexing is attempted first.
 
     Args:
       obj: The object or dict.
@@ -16,6 +18,19 @@ def get_nested_attr(obj, attr):
     for part in parts:
         if obj is None:
             return None
+            
+        # Check if part is a numeric index and obj is a list/tuple
+        if part.isdigit() and isinstance(obj, (list, tuple)):
+            try:
+                index = int(part)
+                obj = obj[index]
+                continue
+            except IndexError:
+                # If index is out of bounds, fall through to normal attribute access
+                # which will raise an appropriate exception
+                pass
+        
+        # Normal attribute/dictionary access
         if isinstance(obj, dict):
             obj = obj[part]
         else:

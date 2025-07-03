@@ -18,6 +18,11 @@ class DummyUser:
     def __str__(self):
         return self.name
 
+    def get_some_dict(self):
+        return {
+            "key": "nested_value_from_func",
+        }
+
 
 class DummyCohort:
     def __init__(self, name):
