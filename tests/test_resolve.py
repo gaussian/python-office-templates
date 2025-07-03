@@ -361,5 +361,55 @@ class TestParserNestedTags(unittest.TestCase):
         self.assertEqual(result, 30)
 
 
+class TestListIndexingIntegration(unittest.TestCase):
+    """Integration tests for list indexing with other templating features"""
+    
+    def setUp(self):
+        class MockService:
+            def get_users(self):
+                return [
+                    {'name': 'Alice', 'age': 30},
+                    {'name': 'Bob', 'age': 25}
+                ]
+        
+        self.context = {
+            'service': MockService(),
+            'data': {
+                'items': ['first', 'second', 'third'],
+                'nested': [
+                    [1, 2, 3],
+                    [4, 5, 6]
+                ]
+            }
+        }
+
+    def test_list_indexing_with_callables(self):
+        """Test list indexing combined with callable methods"""
+        result = resolve_formatted_tag('service.get_users().0.name', self.context)
+        self.assertEqual(result, 'Alice')
+        
+        result = resolve_formatted_tag('service.get_users().1.age', self.context)
+        self.assertEqual(result, 25)
+
+    def test_nested_list_indexing(self):
+        """Test deeply nested list indexing"""
+        result = resolve_formatted_tag('data.nested.0.1', self.context)
+        self.assertEqual(result, 2)
+        
+        result = resolve_formatted_tag('data.nested.1.0', self.context)
+        self.assertEqual(result, 4)
+
+    def test_list_indexing_with_mathematical_operations(self):
+        """Test list indexing combined with math operations"""
+        result = resolve_formatted_tag('data.nested.0.0 + 5', self.context)
+        self.assertEqual(result, 6.0)  # 1 + 5
+
+    def test_list_indexing_preserves_existing_behavior(self):
+        """Test that existing list behavior is preserved when appropriate"""
+        # This should apply .name to each element in the list
+        result = resolve_formatted_tag('service.get_users().name', self.context)
+        self.assertEqual(result, ['Alice', 'Bob'])
+
+
 if __name__ == "__main__":
     unittest.main()
