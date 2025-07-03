@@ -122,7 +122,7 @@ def process_shape_content(
 ):
     """Process the content of a shape based on its type."""
     # 0) Check if this is a grouped shape and process recursively.
-    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         for grouped_shape in shape.shapes:
             process_shape_content(
                 shape=grouped_shape,

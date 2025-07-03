@@ -60,7 +60,7 @@ def _extract_texts_from_shape(shape, loop_variables: set) -> list[str]:
     texts = []
     
     # Handle grouped shapes recursively
-    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         for grouped_shape in shape.shapes:
             texts.extend(_extract_texts_from_shape(grouped_shape, loop_variables))
         return texts

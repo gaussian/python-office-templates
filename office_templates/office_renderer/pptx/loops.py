@@ -50,7 +50,7 @@ def _check_shape_for_loop_directive(shape, pattern) -> bool:
         True if the pattern is found in the shape or its sub-shapes
     """
     # Handle grouped shapes recursively
-    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         for grouped_shape in shape.shapes:
             if _check_shape_for_loop_directive(grouped_shape, pattern):
                 return True
@@ -70,7 +70,7 @@ def _check_shape_for_loop_directive(shape, pattern) -> bool:
 def is_loop_start(shape) -> bool:
     """Return True if the shape text indicates a loop start."""
     # Handle grouped shapes recursively
-    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         for grouped_shape in shape.shapes:
             if is_loop_start(grouped_shape):
                 return True
@@ -356,7 +356,7 @@ def _clear_loop_directives_from_shape(shape):
         shape: Shape to process
     """
     # Handle grouped shapes recursively
-    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         for grouped_shape in shape.shapes:
             _clear_loop_directives_from_shape(grouped_shape)
         return
