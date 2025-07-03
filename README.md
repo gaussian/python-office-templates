@@ -51,3 +51,6 @@ Chart data sheets can also contain placeholders so your graphs update automatica
 
 After trying the example templates in ``raw_templates/`` explore the ``tests/`` directory to see many usage patterns.  The test files demonstrate complex placeholders, permission checks and the new image replacement behaviour.
 
+## Development
+
+Use `uv sync --all-extras` to set up the python environment.

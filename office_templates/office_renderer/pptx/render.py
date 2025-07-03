@@ -1,5 +1,6 @@
 from typing import IO, Callable, Optional
 from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from ..charts import process_chart
 from ..images import (
@@ -120,6 +121,19 @@ def process_shape_content(
     errors: list[str],
 ):
     """Process the content of a shape based on its type."""
+    # 0) Check if this is a grouped shape and process recursively.
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+        for grouped_shape in shape.shapes:
+            process_shape_content(
+                shape=grouped_shape,
+                slide=slide,
+                context=context,
+                slide_number=slide_number,
+                check_permissions=check_permissions,
+                errors=errors,
+            )
+        return
+
     # 1) Check if this shape should be replaced with an image.
     if should_replace_shape_with_image(shape):
         try:

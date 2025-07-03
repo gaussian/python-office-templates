@@ -7,7 +7,7 @@
         "command": "python",
         "args": [
           "-m",
-          "template_reports.dummy_render",
+          "office_templates.dummy_render",
           "${input:templatePath}",
           "${input:extraArg}"
         ],
@@ -23,7 +23,7 @@
         "id": "templatePath",
         "type": "promptString",
         "description": "Enter the template path",
-        "default": "template_reports/raw_templates/template.pptx"
+        "default": "office_templates/raw_templates/template.pptx"
       },
       {
         "id": "extraArg",
