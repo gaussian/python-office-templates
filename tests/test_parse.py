@@ -61,6 +61,39 @@ class TestResolver(unittest.TestCase):
         # Returns string as is if no conversion applies.
         self.assertEqual(parse_value("example"), "example")
 
+    def test_get_nested_attr_list_indexing(self):
+        """Test numeric indexing on lists in get_nested_attr"""
+        test_list = ['a', 'b', 'c']
+        self.assertEqual(get_nested_attr(test_list, "0"), 'a')
+        self.assertEqual(get_nested_attr(test_list, "1"), 'b')
+        self.assertEqual(get_nested_attr(test_list, "2"), 'c')
+        
+        # Test out of bounds
+        with self.assertRaises(AttributeError):
+            get_nested_attr(test_list, "5")
+
+    def test_get_nested_attr_list_vs_dict_numeric_keys(self):
+        """Test that numeric keys work for both lists and dicts"""
+        test_list = ['list_val_0', 'list_val_1']
+        test_dict = {'0': 'dict_val_0', '1': 'dict_val_1'}
+        
+        # List should use indexing
+        self.assertEqual(get_nested_attr(test_list, "0"), 'list_val_0')
+        
+        # Dict should use key access
+        self.assertEqual(get_nested_attr(test_dict, "0"), 'dict_val_0')
+
+    def test_get_nested_attr_nested_with_indexing(self):
+        """Test nested access with list indexing"""
+        data = {
+            'items': [
+                {'name': 'item0'},
+                {'name': 'item1'}
+            ]
+        }
+        self.assertEqual(get_nested_attr(data, "items__0__name"), 'item0')
+        self.assertEqual(get_nested_attr(data, "items__1__name"), 'item1')
+
 
 if __name__ == "__main__":
     unittest.main()

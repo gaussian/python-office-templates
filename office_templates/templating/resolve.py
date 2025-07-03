@@ -321,16 +321,26 @@ def resolve_segment(
     call_args_str = m.group(2)  # String of comma-separated arguments (may be None)
     filter_expr = m.group(3)  # Filtering expression (may be None)
 
-    # If the current object is a list, apply the segment resolution to each element.
+    # If the current object is a list, check if we're doing numeric indexing
     if isinstance(current, list):
-        results = []
-        for item in current:
-            res = resolve_segment(item, segment, check_permissions=check_permissions)
-            if isinstance(res, list):
-                results.extend(res)
-            else:
-                results.append(res)
-        return results
+        # If the attribute name is numeric and we have no call args or filters, 
+        # treat this as list indexing rather than applying to each element
+        if attr_name.isdigit() and call_args_str is None and filter_expr is None:
+            try:
+                index = int(attr_name)
+                return current[index]
+            except IndexError:
+                raise MissingDataException(f"Index {attr_name} out of bounds for list of length {len(current)}")
+        else:
+            # Apply the segment resolution to each element (existing behavior)
+            results = []
+            for item in current:
+                res = resolve_segment(item, segment, check_permissions=check_permissions)
+                if isinstance(res, list):
+                    results.extend(res)
+                else:
+                    results.append(res)
+            return results
 
     # Retrieve the attribute using a helper function that supports nested lookups.
     try:

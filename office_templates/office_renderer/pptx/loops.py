@@ -8,6 +8,7 @@ import re
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Any
 
 from office_templates.templating import resolve_tag
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from ..constants import (
     LOOP_START_PATTERN_STR,
@@ -37,8 +38,44 @@ def extract_loop_directive(text: str | None) -> tuple[str | None, str | None]:
     return None, None
 
 
+def _check_shape_for_loop_directive(shape, pattern) -> bool:
+    """
+    Recursively check a shape (including grouped shapes) for loop directives.
+    
+    Args:
+        shape: Shape to check
+        pattern: Regex pattern to match
+        
+    Returns:
+        True if the pattern is found in the shape or its sub-shapes
+    """
+    # Handle grouped shapes recursively
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+        for grouped_shape in shape.shapes:
+            if _check_shape_for_loop_directive(grouped_shape, pattern):
+                return True
+        return False
+    
+    # Check individual shape
+    if not hasattr(shape, "text_frame") or not hasattr(shape.text_frame, "text"):
+        return False
+
+    text = shape.text_frame.text
+    if not text:
+        return False
+
+    return pattern.search(text.strip()) is not None
+
+
 def is_loop_start(shape) -> bool:
     """Return True if the shape text indicates a loop start."""
+    # Handle grouped shapes recursively
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+        for grouped_shape in shape.shapes:
+            if is_loop_start(grouped_shape):
+                return True
+        return False
+    
     if not hasattr(shape, "text_frame") or not hasattr(shape.text_frame, "text"):
         return False
 
@@ -48,14 +85,7 @@ def is_loop_start(shape) -> bool:
 
 def is_loop_end(shape) -> bool:
     """Return True if the shape text indicates a loop end."""
-    if not hasattr(shape, "text_frame") or not hasattr(shape.text_frame, "text"):
-        return False
-
-    text = shape.text_frame.text
-    if not text:
-        return False
-
-    return LOOP_END_PATTERN.search(text.strip()) is not None
+    return _check_shape_for_loop_directive(shape, LOOP_END_PATTERN)
 
 
 def get_collection_from_collection_tag(
@@ -318,6 +348,32 @@ def process_loops(
     return slides_to_process
 
 
+def _clear_loop_directives_from_shape(shape):
+    """
+    Recursively clear loop directives from a shape, handling grouped shapes.
+    
+    Args:
+        shape: Shape to process
+    """
+    # Handle grouped shapes recursively
+    if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+        for grouped_shape in shape.shapes:
+            _clear_loop_directives_from_shape(grouped_shape)
+        return
+    
+    # Process individual shape
+    if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
+        text = shape.text_frame.text.strip()
+        if LOOP_START_PATTERN.search(text) or LOOP_END_PATTERN.search(text):
+            # Clear text at paragraph level to handle formatting
+            for paragraph in shape.text_frame.paragraphs:
+                if paragraph.runs:
+                    for run in paragraph.runs:
+                        run.text = ""
+                else:
+                    paragraph.text = ""
+
+
 def clear_loop_directives(prs):
     """
     Clear the text of all shapes that contain loop directives.
@@ -327,13 +383,4 @@ def clear_loop_directives(prs):
     """
     for slide in prs.slides:
         for shape in slide.shapes:
-            if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
-                text = shape.text_frame.text.strip()
-                if LOOP_START_PATTERN.search(text) or LOOP_END_PATTERN.search(text):
-                    # Clear text at paragraph level to handle formatting
-                    for paragraph in shape.text_frame.paragraphs:
-                        if paragraph.runs:
-                            for run in paragraph.runs:
-                                run.text = ""
-                        else:
-                            paragraph.text = ""
+            _clear_loop_directives_from_shape(shape)
