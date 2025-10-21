@@ -5,7 +5,7 @@ import unittest
 from pptx import Presentation
 from pptx.util import Inches
 
-from office_templates.office_renderer import compose_graphs_pptx
+from office_templates.office_renderer import compose_pptx
 
 
 class TestGraphsIntegration(unittest.TestCase):
@@ -53,8 +53,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_software_architecture_diagram(self):
         """Test creating a realistic software architecture diagram."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {
                         "id": "frontend",
@@ -95,14 +99,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "product_service", "to": "database", "label": "Product Data"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -127,8 +134,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_workflow_diagram(self):
         """Test creating a workflow/process diagram."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {
                         "id": "start",
@@ -168,14 +179,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "fulfill", "to": "complete", "label": "Done"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -189,8 +203,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_hierarchical_org_chart(self):
         """Test creating a hierarchical organization chart."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {
                         "id": "ceo",
@@ -230,14 +248,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "cto", "to": "devops_mgr", "label": "Manages"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -248,9 +269,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_multiple_architecture_diagrams(self):
         """Test creating multiple architecture diagrams in one presentation."""
-        graphs = [
-            # Development environment
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {
                         "id": "dev_frontend",
@@ -268,9 +292,14 @@ class TestGraphsIntegration(unittest.TestCase):
                 "edges": [
                     {"from": "dev_frontend", "to": "dev_backend", "label": "HTTP"},
                 ],
+            }
+
             },
-            # Production environment
-            {
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {
                         "id": "prod_lb",
@@ -295,15 +324,18 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "prod_lb", "to": "prod_app", "label": "HTTPS"},
                     {"from": "prod_app", "to": "prod_db", "label": "SQL"},
                 ],
-            },
+            }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -318,8 +350,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_complex_network_topology(self):
         """Test creating a complex network topology with many nodes and edges."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {"id": "router", "name": "Router", "detail": "Main Gateway", "position": {"x": 4, "y": 1}},
                     {"id": "switch1", "name": "Switch 1", "detail": "Floor 1", "position": {"x": 2, "y": 3}},
@@ -338,14 +374,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "switch2", "to": "server4", "label": "100Mbps"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -363,8 +402,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_graph_with_large_coordinates(self):
         """Test that slides auto-expand for large coordinate values."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {"id": "n1", "name": "Node 1", "position": {"x": 1, "y": 1}},
                     {"id": "n2", "name": "Node 2", "position": {"x": 15, "y": 1}},
@@ -378,14 +421,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "n3", "to": "n4"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -405,8 +451,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_data_flow_diagram(self):
         """Test creating a data flow diagram."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {"id": "user", "name": "User", "detail": "Web Browser", "position": {"x": 1, "y": 3}},
                     {"id": "cdn", "name": "CDN", "detail": "CloudFront", "position": {"x": 3, "y": 3}},
@@ -423,14 +473,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "db", "to": "app", "label": "Data"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -441,8 +494,12 @@ class TestGraphsIntegration(unittest.TestCase):
 
     def test_graph_with_nested_nodes_placeholder(self):
         """Test graph with nested nodes (placeholder functionality)."""
-        graphs = [
-            {
+        slide_specs = [
+{
+
+                "layout": "graph",
+
+                "graph": {
                 "nodes": [
                     {
                         "id": "container",
@@ -469,14 +526,17 @@ class TestGraphsIntegration(unittest.TestCase):
                     {"from": "service1", "to": "service2", "label": "Internal"},
                 ],
             }
+
+            }
+
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,

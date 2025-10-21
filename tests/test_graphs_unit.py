@@ -5,7 +5,7 @@ import unittest
 from pptx import Presentation
 from pptx.util import Inches
 
-from office_templates.office_renderer import compose_graphs_pptx
+from office_templates.office_renderer import compose_pptx
 
 
 class TestGraphsUnit(unittest.TestCase):
@@ -44,32 +44,35 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_simple_graph_with_nodes_only(self):
         """Test creating a simple graph with just nodes, no edges."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "node1",
-                        "name": "First Node",
-                        "detail": "Details about first node",
-                        "position": {"x": 1, "y": 1},
-                    },
-                    {
-                        "id": "node2",
-                        "name": "Second Node",
-                        "detail": "Details about second node",
-                        "position": {"x": 4, "y": 1},
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "node1",
+                            "name": "First Node",
+                            "detail": "Details about first node",
+                            "position": {"x": 1, "y": 1},
+                        },
+                        {
+                            "id": "node2",
+                            "name": "Second Node",
+                            "detail": "Details about second node",
+                            "position": {"x": 4, "y": 1},
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -89,38 +92,41 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_graph_with_nodes_and_edges(self):
         """Test creating a graph with nodes and edges."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "A",
-                        "name": "Node A",
-                        "position": {"x": 1, "y": 2},
-                    },
-                    {
-                        "id": "B",
-                        "name": "Node B",
-                        "position": {"x": 4, "y": 2},
-                    },
-                    {
-                        "id": "C",
-                        "name": "Node C",
-                        "position": {"x": 7, "y": 2},
-                    },
-                ],
-                "edges": [
-                    {"from": "A", "to": "B", "label": "connects to"},
-                    {"from": "B", "to": "C", "label": "flows to"},
-                ],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "A",
+                            "name": "Node A",
+                            "position": {"x": 1, "y": 2},
+                        },
+                        {
+                            "id": "B",
+                            "name": "Node B",
+                            "position": {"x": 4, "y": 2},
+                        },
+                        {
+                            "id": "C",
+                            "name": "Node C",
+                            "position": {"x": 7, "y": 2},
+                        },
+                    ],
+                    "edges": [
+                        {"from": "A", "to": "B", "label": "connects to"},
+                        {"from": "B", "to": "C", "label": "flows to"},
+                    ],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -135,33 +141,42 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_multiple_graphs_create_multiple_slides(self):
         """Test that multiple graphs create multiple slides."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {"id": "1", "name": "Node 1", "position": {"x": 1, "y": 1}},
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "1", "name": "Node 1", "position": {"x": 1, "y": 1}},
+                    ],
+                    "edges": [],
+                }
             },
             {
-                "nodes": [
-                    {"id": "2", "name": "Node 2", "position": {"x": 1, "y": 1}},
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "2", "name": "Node 2", "position": {"x": 1, "y": 1}},
+                    ],
+                    "edges": [],
+                }
             },
             {
-                "nodes": [
-                    {"id": "3", "name": "Node 3", "position": {"x": 1, "y": 1}},
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "3", "name": "Node 3", "position": {"x": 1, "y": 1}},
+                    ],
+                    "edges": [],
+                }
             },
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -175,26 +190,29 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_template_variable_processing_in_nodes(self):
         """Test that template variables in node names are processed."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "test",
-                        "name": "{{ company }}",
-                        "detail": "Prefix: {{ node_prefix }}",
-                        "position": {"x": 1, "y": 1},
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "test",
+                            "name": "{{ company }}",
+                            "detail": "Prefix: {{ node_prefix }}",
+                            "position": {"x": 1, "y": 1},
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -220,24 +238,27 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_edge_label_processing(self):
         """Test that edge labels with template variables are processed."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {"id": "A", "name": "Node A", "position": {"x": 1, "y": 1}},
-                    {"id": "B", "name": "Node B", "position": {"x": 4, "y": 1}},
-                ],
-                "edges": [
-                    {"from": "A", "to": "B", "label": "{{ company }} edge"},
-                ],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "A", "name": "Node A", "position": {"x": 1, "y": 1}},
+                        {"id": "B", "name": "Node B", "position": {"x": 4, "y": 1}},
+                    ],
+                    "edges": [
+                        {"from": "A", "to": "B", "label": "{{ company }} edge"},
+                    ],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -248,25 +269,28 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_node_without_position_error(self):
         """Test error handling when node is missing position."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "bad_node",
-                        "name": "Bad Node",
-                        # Missing position
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "bad_node",
+                            "name": "Bad Node",
+                            # Missing position
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -278,25 +302,28 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_node_without_id_error(self):
         """Test error handling when node is missing id."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        # Missing id
-                        "name": "Node",
-                        "position": {"x": 1, "y": 1},
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            # Missing id
+                            "name": "Node",
+                            "position": {"x": 1, "y": 1},
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -308,25 +335,28 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_node_without_name_error(self):
         """Test error handling when node is missing name."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "test",
-                        # Missing name
-                        "position": {"x": 1, "y": 1},
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "test",
+                            # Missing name
+                            "position": {"x": 1, "y": 1},
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -338,23 +368,26 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_edge_with_unknown_node_error(self):
         """Test error handling when edge references unknown node."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {"id": "A", "name": "Node A", "position": {"x": 1, "y": 1}},
-                ],
-                "edges": [
-                    {"from": "A", "to": "B"},  # B doesn't exist
-                ],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "A", "name": "Node A", "position": {"x": 1, "y": 1}},
+                    ],
+                    "edges": [
+                        {"from": "A", "to": "B"},  # B doesn't exist
+                    ],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -366,19 +399,22 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_graph_missing_nodes_key_error(self):
         """Test error handling when graph is missing nodes key."""
-        graphs = [
+        slide_specs = [
             {
-                # Missing nodes
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    # Missing nodes
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -386,25 +422,28 @@ class TestGraphsUnit(unittest.TestCase):
 
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
-        self.assertTrue(any("Missing 'nodes' key" in error for error in errors))
+        self.assertTrue(any("missing 'nodes' key" in error for error in errors))
 
     def test_graph_missing_edges_key_error(self):
         """Test error handling when graph is missing edges key."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {"id": "test", "name": "Node", "position": {"x": 1, "y": 1}},
-                ],
-                # Missing edges
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "test", "name": "Node", "position": {"x": 1, "y": 1}},
+                    ],
+                    # Missing edges
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -412,16 +451,16 @@ class TestGraphsUnit(unittest.TestCase):
 
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
-        self.assertTrue(any("Missing 'edges' key" in error for error in errors))
+        self.assertTrue(any("missing 'edges' key" in error for error in errors))
 
     def test_no_graphs_error(self):
         """Test error handling when no graphs are provided."""
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=[],
+            slide_specs=[],
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -429,25 +468,28 @@ class TestGraphsUnit(unittest.TestCase):
 
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
-        self.assertTrue(any("No graphs specified" in error for error in errors))
+        self.assertTrue(any("No slides specified" in error for error in errors))
 
     def test_no_template_files_error(self):
         """Test error handling when no template files are provided."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {"id": "test", "name": "Node", "position": {"x": 1, "y": 1}},
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "test", "name": "Node", "position": {"x": 1, "y": 1}},
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -459,31 +501,34 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_node_with_parent_placeholder(self):
         """Test that nodes with parent key are accepted (placeholder functionality)."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "parent",
-                        "name": "Parent Node",
-                        "position": {"x": 1, "y": 1},
-                    },
-                    {
-                        "id": "child",
-                        "name": "Child Node",
-                        "position": {"x": 2, "y": 2},
-                        "parent": "parent",  # This is placeholder for now
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "parent",
+                            "name": "Parent Node",
+                            "position": {"x": 1, "y": 1},
+                        },
+                        {
+                            "id": "child",
+                            "name": "Child Node",
+                            "position": {"x": 2, "y": 2},
+                            "parent": "parent",  # This is placeholder for now
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -495,26 +540,29 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_node_without_detail(self):
         """Test that nodes without detail field work correctly."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {
-                        "id": "simple",
-                        "name": "Simple Node",
-                        # No detail field
-                        "position": {"x": 1, "y": 1},
-                    },
-                ],
-                "edges": [],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "simple",
+                            "name": "Simple Node",
+                            # No detail field
+                            "position": {"x": 1, "y": 1},
+                        },
+                    ],
+                    "edges": [],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,
@@ -525,24 +573,27 @@ class TestGraphsUnit(unittest.TestCase):
 
     def test_edge_without_label(self):
         """Test that edges without label field work correctly."""
-        graphs = [
+        slide_specs = [
             {
-                "nodes": [
-                    {"id": "A", "name": "Node A", "position": {"x": 1, "y": 1}},
-                    {"id": "B", "name": "Node B", "position": {"x": 4, "y": 1}},
-                ],
-                "edges": [
-                    {"from": "A", "to": "B"},  # No label
-                ],
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {"id": "A", "name": "Node A", "position": {"x": 1, "y": 1}},
+                        {"id": "B", "name": "Node B", "position": {"x": 4, "y": 1}},
+                    ],
+                    "edges": [
+                        {"from": "A", "to": "B"},  # No label
+                    ],
+                }
             }
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")
         self.temp_files.append(output_file)
 
-        result, errors = compose_graphs_pptx(
+        result, errors = compose_pptx(
             template_files=[self.template_path],
-            graphs=graphs,
+            slide_specs=slide_specs,
             global_context=self.context,
             output=output_file,
             use_tagged_layouts=True,

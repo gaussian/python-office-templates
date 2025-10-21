@@ -50,45 +50,50 @@ Chart data sheets can also contain placeholders so your graphs update automatica
 
 ## Creating Node/Edge Graphs
 
-The library can programmatically generate node/edge graph visualizations in PowerPoint presentations. This is useful for creating architecture diagrams, flowcharts, network topologies, and organizational charts.
+The library can programmatically generate node/edge graph visualizations in PowerPoint presentations using the `compose_pptx` function. This is useful for creating architecture diagrams, flowcharts, network topologies, and organizational charts.
 
 ### Basic Usage
 
-```python
-from office_templates.office_renderer import compose_graphs_pptx
+Graph slides are specified just like any other slide in `compose_pptx`, by including a `graph` key in the slide specification:
 
-graphs = [
+```python
+from office_templates.office_renderer import compose_pptx
+
+slide_specs = [
     {
-        "nodes": [
-            {
-                "id": "frontend",
-                "name": "Frontend",
-                "detail": "React.js Application",
-                "position": {"x": 1, "y": 2},
-            },
-            {
-                "id": "backend",
-                "name": "Backend API",
-                "detail": "Node.js Server",
-                "position": {"x": 4, "y": 2},
-            },
-            {
-                "id": "database",
-                "name": "Database",
-                "detail": "PostgreSQL",
-                "position": {"x": 7, "y": 2},
-            },
-        ],
-        "edges": [
-            {"from": "frontend", "to": "backend", "label": "HTTPS"},
-            {"from": "backend", "to": "database", "label": "SQL"},
-        ],
+        "layout": "graph",  # Use a layout designed for graphs
+        "graph": {
+            "nodes": [
+                {
+                    "id": "frontend",
+                    "name": "Frontend",
+                    "detail": "React.js Application",
+                    "position": {"x": 1, "y": 2},
+                },
+                {
+                    "id": "backend",
+                    "name": "Backend API",
+                    "detail": "Node.js Server",
+                    "position": {"x": 4, "y": 2},
+                },
+                {
+                    "id": "database",
+                    "name": "Database",
+                    "detail": "PostgreSQL",
+                    "position": {"x": 7, "y": 2},
+                },
+            ],
+            "edges": [
+                {"from": "frontend", "to": "backend", "label": "HTTPS"},
+                {"from": "backend", "to": "database", "label": "SQL"},
+            ],
+        }
     }
 ]
 
-result, errors = compose_graphs_pptx(
+result, errors = compose_pptx(
     template_files=["template.pptx"],
-    graphs=graphs,
+    slide_specs=slide_specs,
     global_context={},
     output="output.pptx",
     use_tagged_layouts=True,
@@ -97,7 +102,7 @@ result, errors = compose_graphs_pptx(
 
 ### Graph Structure
 
-Each graph dictionary should contain:
+Each `graph` dictionary should contain:
 
 * **nodes** (list, required): List of node dictionaries with:
   * `id` (string, required): Unique identifier for the node
@@ -116,8 +121,9 @@ Each graph dictionary should contain:
 * **Automatic slide expansion**: Slides automatically resize to fit all nodes
 * **Elbow connectors**: Edges use right-angle connectors for professional appearance
 * **Template variables**: Node names, details, and edge labels support `{{ }}` placeholders
-* **Multiple graphs**: Each graph in the list creates a separate slide
+* **Multiple graphs**: Create multiple graph slides in the same presentation by including multiple slide specs with `graph` keys
 * **Template layouts**: Use `% layout graph %` in template slides to define custom layouts
+* **Mix with regular slides**: Graph slides can be intermixed with regular content slides
 
 ### Node Positioning
 
@@ -128,6 +134,33 @@ Node positions are specified in inches from the top-left corner of the slide:
 ```
 
 Nodes are automatically sized to fit their content, and slides expand to accommodate all nodes plus margins.
+
+### Multiple Graphs
+
+You can create multiple graph slides in a single presentation:
+
+```python
+slide_specs = [
+    {
+        "layout": "title",
+        "placeholders": ["Architecture Overview", "System Design"],
+    },
+    {
+        "layout": "graph",
+        "graph": {
+            "nodes": [...],  # Development environment
+            "edges": [...],
+        }
+    },
+    {
+        "layout": "graph",
+        "graph": {
+            "nodes": [...],  # Production environment
+            "edges": [...],
+        }
+    },
+]
+```
 
 ## Learning More
 

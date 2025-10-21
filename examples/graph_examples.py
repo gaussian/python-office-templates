@@ -1,7 +1,7 @@
 """
 Example demonstrating how to create node/edge graphs in PowerPoint presentations.
 
-This example shows various types of graphs that can be created using compose_graphs_pptx:
+This example shows various types of graphs that can be created using compose_pptx:
 - Software architecture diagram
 - Workflow/process diagram
 - Network topology
@@ -12,7 +12,7 @@ import os
 import tempfile
 from pptx import Presentation
 from pptx.util import Inches
-from office_templates.office_renderer import compose_graphs_pptx
+from office_templates.office_renderer import compose_pptx
 
 
 def create_template():
@@ -210,12 +210,24 @@ def main():
     template_path = create_template()
     print(f"Created template at: {template_path}")
     
-    # Define graphs with different contexts
-    graphs = [
-        example_software_architecture(),
-        example_workflow(),
-        example_network_topology(),
-        example_org_chart(),
+    # Define slide specs with different graph types
+    slide_specs = [
+        {
+            "layout": "graph",
+            "graph": example_software_architecture(),
+        },
+        {
+            "layout": "graph",
+            "graph": example_workflow(),
+        },
+        {
+            "layout": "graph",
+            "graph": example_network_topology(),
+        },
+        {
+            "layout": "graph",
+            "graph": example_org_chart(),
+        },
     ]
     
     # Global context for template variables
@@ -226,9 +238,9 @@ def main():
     
     # Generate output
     output_path = tempfile.mktemp(suffix=".pptx")
-    result, errors = compose_graphs_pptx(
+    result, errors = compose_pptx(
         template_files=[template_path],
-        graphs=graphs,
+        slide_specs=slide_specs,
         global_context=context,
         output=output_path,
         use_tagged_layouts=True,
