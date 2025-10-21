@@ -33,30 +33,76 @@ def compose_graphs_pptx(
     """
     Compose a PPTX with node/edge graphs, each graph on a single slide.
     
+    This function creates professional-looking node/edge graph visualizations suitable for
+    architecture diagrams, flowcharts, network topologies, and organizational charts.
+    
     Args:
         template_files: List of template file paths or file-like objects
         graphs: List of graph dictionaries, each containing 'nodes' and 'edges'
-        global_context: Global context dictionary
+        global_context: Global context dictionary for template variable processing
         output: Output file path or file-like object
-        check_permissions: Permission checking function
+        check_permissions: Optional permission checking function
         use_tagged_layouts: If True, include slides with % layout XXX % tags
         use_all_slides_as_layouts_by_title: If True, use all slides as layouts by title
         layout_name: Name of the layout to use for graph slides (default: "graph")
         
-    Each graph dictionary should have:
-        - nodes: List of node dicts with:
-            - id: Unique identifier (required)
-            - name: Display name (required)
-            - detail: Additional detail text (optional)
-            - position: Dict with 'x' and 'y' keys in inches (required)
-            - parent: ID of parent node for nesting (optional)
-        - edges: List of edge dicts with:
-            - from: Source node ID (required)
-            - to: Target node ID (required)
-            - label: Edge label text (optional)
+    Graph Structure:
+        Each graph dictionary should have:
+        
+        nodes: List of node dicts with:
+            - id (str, required): Unique identifier
+            - name (str, required): Display name
+            - detail (str, optional): Additional detail text shown in smaller font
+            - position (dict, required): Dict with 'x' and 'y' keys in inches
+            - parent (str, optional): ID of parent node for nesting (placeholder)
+            
+        edges: List of edge dicts with:
+            - from (str, required): Source node ID
+            - to (str, required): Target node ID
+            - label (str, optional): Edge label text
+    
+    Example:
+        >>> graphs = [
+        ...     {
+        ...         "nodes": [
+        ...             {
+        ...                 "id": "frontend",
+        ...                 "name": "Frontend",
+        ...                 "detail": "React Application",
+        ...                 "position": {"x": 1, "y": 2},
+        ...             },
+        ...             {
+        ...                 "id": "backend",
+        ...                 "name": "Backend",
+        ...                 "detail": "Node.js API",
+        ...                 "position": {"x": 4, "y": 2},
+        ...             },
+        ...         ],
+        ...         "edges": [
+        ...             {"from": "frontend", "to": "backend", "label": "HTTPS"},
+        ...         ],
+        ...     }
+        ... ]
+        >>> result, errors = compose_graphs_pptx(
+        ...     template_files=["template.pptx"],
+        ...     graphs=graphs,
+        ...     global_context={"project": "My Project"},
+        ...     output="output.pptx",
+        ...     use_tagged_layouts=True,
+        ... )
+        
+    Features:
+        - Nodes are rectangular shapes with auto-expanding text
+        - Edges use elbow connectors (right angles) for professional appearance
+        - Slides automatically expand to fit all nodes
+        - Node names and details support template variables like {{ variable }}
+        - Edge labels also support template variables
+        - Parent nodes are accepted but not yet fully implemented (placeholder)
             
     Returns:
-        Tuple of (output, errors) - errors is None if successful, list of errors otherwise
+        Tuple of (output, errors):
+            - output: The output file object if successful, None otherwise
+            - errors: None if successful, list of error strings otherwise
     """
     errors: list[str] = []
     
