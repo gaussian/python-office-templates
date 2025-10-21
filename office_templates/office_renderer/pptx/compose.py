@@ -7,6 +7,7 @@ from office_templates.templating.core import process_text_recursive
 from .render import process_single_slide
 from .layouts import build_layout_mapping
 from .utils import copy_slide_across_presentations
+from .graph_processing import process_graph_slide
 
 
 def compose_pptx(
@@ -29,6 +30,28 @@ def compose_pptx(
         check_permissions: Permission checking function
         use_tagged_layouts: If True, include slides with % layout XXX % tags
         use_all_slides_as_layouts_by_title: If True, use all slides as layouts by title
+
+    Slide Specification:
+        Each slide_spec can be a regular slide or a graph slide:
+        
+        Regular slide:
+            - layout: Layout name (required)
+            - placeholders: List of placeholder texts (optional)
+            - Any other context data for template processing
+            
+        Graph slide:
+            - layout: Layout name (required)
+            - graph: Dict containing 'nodes' and 'edges' (optional)
+                - nodes: List of node dicts with:
+                    - id (str, required): Unique identifier
+                    - name (str, required): Display name
+                    - detail (str, optional): Additional detail text
+                    - position (dict, required): {"x": inches, "y": inches}
+                    - parent (str, optional): Parent node ID (placeholder)
+                - edges: List of edge dicts with:
+                    - from (str, required): Source node ID
+                    - to (str, required): Target node ID
+                    - label (str, optional): Edge label text
 
     Returns:
         Tuple of (output, errors) - errors is None if successful, list of errors otherwise
@@ -126,7 +149,19 @@ def compose_pptx(
                         errors=errors,
                     )
 
-                # Process the slide
+                # Check if this is a graph slide
+                if "graph" in slide_spec:
+                    process_graph_slide(
+                        slide=new_slide,
+                        graph=slide_spec["graph"],
+                        base_prs=base_prs,
+                        global_context=global_context,
+                        check_permissions=check_permissions,
+                        slide_number=slide_number,
+                        errors=errors,
+                    )
+                
+                # Process the slide for template variables
                 process_single_slide(
                     slide=new_slide,
                     context=slide_context,
@@ -189,3 +224,5 @@ def process_placeholders(
                 errors.append(
                     f"Error processing placeholder {placeholder_index} (slide {slide_number}): {e}"
                 )
+
+
