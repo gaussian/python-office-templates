@@ -11,19 +11,20 @@ from .graph_processing import process_graph_slide
 
 
 def compose_pptx(
-    template_files: list,
-    slide_specs: list[dict],
-    global_context: dict,
-    output,
+    template_files: Optional[list] = None,
+    slide_specs: list[dict] = None,
+    global_context: dict = None,
+    output = None,
     check_permissions: Optional[Callable[[object], bool]] = None,
     use_tagged_layouts=False,
     use_all_slides_as_layouts_by_title=False,
 ):
     """
     Compose a PPTX deck using layout slides from multiple template files.
+    If no template files are provided, creates a blank presentation with default layouts.
 
     Args:
-        template_files: List of template file paths or file-like objects
+        template_files: List of template file paths or file-like objects (optional, defaults to empty list)
         slide_specs: List of slide dictionaries, each containing 'layout' key and context data
         global_context: Global context dictionary
         output: Output file path or file-like object
@@ -59,11 +60,15 @@ def compose_pptx(
     errors: list[str] = []
 
     try:
-        # Validate inputs
-        if not template_files:
-            errors.append("No template files provided")
-            return None, errors
+        # Set defaults for optional parameters
+        if template_files is None:
+            template_files = []
+        if slide_specs is None:
+            slide_specs = []
+        if global_context is None:
+            global_context = {}
 
+        # Validate inputs
         if not slide_specs:
             errors.append("No slides specified")
             return None, errors
@@ -75,16 +80,17 @@ def compose_pptx(
             use_all_slides_as_layouts_by_title=use_all_slides_as_layouts_by_title,
         )
 
-        if not layout_mapping:
-            errors.append("No layout slides found in template files")
-            return None, errors
-
-        # Use the first template as the base presentation
-        if isinstance(template_files[0], str):
-            base_prs = Presentation(template_files[0])
+        # Create base presentation
+        if template_files:
+            # Use the first template as the base presentation
+            if isinstance(template_files[0], str):
+                base_prs = Presentation(template_files[0])
+            else:
+                template_files[0].seek(0)
+                base_prs = Presentation(template_files[0])
         else:
-            template_files[0].seek(0)
-            base_prs = Presentation(template_files[0])
+            # Create a blank presentation with default layouts
+            base_prs = Presentation()
 
         # Remove all slides from the base presentation to create a blank deck
         sld_ids = base_prs.slides._sldIdLst

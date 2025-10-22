@@ -11,9 +11,10 @@ def build_layout_mapping(
 ):
     """
     Build a mapping of layout IDs to slide objects from multiple template files.
+    If no template files are provided, returns a mapping with default master layouts.
 
     Args:
-        template_files: List of template file paths or file-like objects
+        template_files: List of template file paths or file-like objects (can be empty)
         use_tagged_layouts: If True, include slides with % layout XXX % tags
         use_all_slides_as_layouts_by_title: If True, use all slides as layouts by title
 
@@ -21,6 +22,14 @@ def build_layout_mapping(
         dict: Mapping of layout ID (str) to (presentation, slide) tuple
     """
     layout_mapping = {}
+
+    # If no template files provided, use default blank presentation layouts
+    if not template_files:
+        prs = Presentation()
+        master_layouts = get_master_layouts(prs)
+        for layout_id, layout in master_layouts.items():
+            layout_mapping[layout_id] = (prs, layout)
+        return layout_mapping
 
     for template_file in template_files:
         # Load presentation
