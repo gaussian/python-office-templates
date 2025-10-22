@@ -27,10 +27,10 @@ class TestGraphsUnit(unittest.TestCase):
     def _create_test_template(self):
         """Create a simple test template."""
         prs = Presentation()
-        
+
         # Add a blank slide as a graph layout
         slide = prs.slides.add_slide(prs.slide_layouts[6])  # Blank layout
-        
+
         # Add layout tag
         layout_box = slide.shapes.add_textbox(
             Inches(1), Inches(1), Inches(4), Inches(0.5)
@@ -63,7 +63,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -85,7 +85,7 @@ class TestGraphsUnit(unittest.TestCase):
         # Verify the output
         prs = Presentation(output_file)
         self.assertEqual(len(prs.slides), 1)
-        
+
         # Check that slide has shapes (nodes)
         slide = prs.slides[0]
         self.assertGreater(len(slide.shapes), 0)
@@ -117,7 +117,7 @@ class TestGraphsUnit(unittest.TestCase):
                         {"from": "A", "to": "B", "label": "connects to"},
                         {"from": "B", "to": "C", "label": "flows to"},
                     ],
-                }
+                },
             }
         ]
 
@@ -149,7 +149,7 @@ class TestGraphsUnit(unittest.TestCase):
                         {"id": "1", "name": "Node 1", "position": {"x": 1, "y": 1}},
                     ],
                     "edges": [],
-                }
+                },
             },
             {
                 "layout": "graph",
@@ -158,7 +158,7 @@ class TestGraphsUnit(unittest.TestCase):
                         {"id": "2", "name": "Node 2", "position": {"x": 1, "y": 1}},
                     ],
                     "edges": [],
-                }
+                },
             },
             {
                 "layout": "graph",
@@ -167,7 +167,7 @@ class TestGraphsUnit(unittest.TestCase):
                         {"id": "3", "name": "Node 3", "position": {"x": 1, "y": 1}},
                     ],
                     "edges": [],
-                }
+                },
             },
         ]
 
@@ -203,7 +203,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -224,7 +224,7 @@ class TestGraphsUnit(unittest.TestCase):
         # Check that variables were processed
         prs = Presentation(output_file)
         slide = prs.slides[0]
-        
+
         # Find text containing processed variable
         found_company = False
         for shape in slide.shapes:
@@ -233,7 +233,7 @@ class TestGraphsUnit(unittest.TestCase):
                 if "Test Corp" in text:
                     found_company = True
                     break
-                    
+
         self.assertTrue(found_company, "Template variable should be processed")
 
     def test_edge_label_processing(self):
@@ -249,7 +249,7 @@ class TestGraphsUnit(unittest.TestCase):
                     "edges": [
                         {"from": "A", "to": "B", "label": "{{ company }} edge"},
                     ],
-                }
+                },
             }
         ]
 
@@ -281,7 +281,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -314,7 +314,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -347,7 +347,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -378,7 +378,7 @@ class TestGraphsUnit(unittest.TestCase):
                     "edges": [
                         {"from": "A", "to": "B"},  # B doesn't exist
                     ],
-                }
+                },
             }
         ]
 
@@ -405,7 +405,7 @@ class TestGraphsUnit(unittest.TestCase):
                 "graph": {
                     # Missing nodes
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -434,7 +434,7 @@ class TestGraphsUnit(unittest.TestCase):
                         {"id": "test", "name": "Node", "position": {"x": 1, "y": 1}},
                     ],
                     # Missing edges
-                }
+                },
             }
         ]
 
@@ -480,7 +480,7 @@ class TestGraphsUnit(unittest.TestCase):
                         {"id": "test", "name": "Node", "position": {"x": 1, "y": 1}},
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -520,7 +520,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -554,7 +554,7 @@ class TestGraphsUnit(unittest.TestCase):
                         },
                     ],
                     "edges": [],
-                }
+                },
             }
         ]
 
@@ -585,7 +585,7 @@ class TestGraphsUnit(unittest.TestCase):
                     "edges": [
                         {"from": "A", "to": "B"},  # No label
                     ],
-                }
+                },
             }
         ]
 
@@ -602,6 +602,89 @@ class TestGraphsUnit(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertIsNone(errors)
+
+    def test_pixel_based_positions_from_frontend(self):
+        """Test that pixel-based positions from frontend graphs work correctly.
+
+        This test uses the exact positions from the bug report where positions
+        like x=390.99999928474426 were being interpreted as inches instead of pixels,
+        causing an error: "value must be in range(914400, 51206400) (1-56 inches),
+        got 360730799"
+        """
+        slide_specs = [
+            {
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "d65d0243-a79a-4605-9df7-544522c20aa8",
+                            "name": "Node 1",
+                            "position": {"x": 20, "y": 33.91666666666667},
+                        },
+                        {
+                            "id": "645f7aa1-5507-432a-8ad8-c61b860f3052",
+                            "name": "Node 2",
+                            "position": {"x": 189.5, "y": 33.91666666666667},
+                        },
+                        {
+                            "id": "a6695bf7-d8f6-4baa-89b9-bf11b65379ae",
+                            "name": "Node 3",
+                            "position": {"x": 390.99999928474426, "y": 227.75},
+                        },
+                        {
+                            "id": "111ede80-74cd-4c94-80e0-610d471eadcb",
+                            "name": "Node 4",
+                            "position": {"x": 390.99999928474426, "y": 287},
+                        },
+                        {
+                            "id": "24466882-e684-4e41-8a5c-25fab255fece",
+                            "name": "Node 5",
+                            "position": {"x": 390.99999928474426, "y": 168.5},
+                        },
+                        {
+                            "id": "ac781a02-f6b5-4986-95cc-27dbd5b1ff97",
+                            "name": "Node 6",
+                            "position": {"x": 370.99999928474426, "y": 20},
+                        },
+                    ],
+                    "edges": [
+                        {
+                            "from": "d65d0243-a79a-4605-9df7-544522c20aa8",
+                            "to": "a6695bf7-d8f6-4baa-89b9-bf11b65379ae",
+                        },
+                        {
+                            "from": "645f7aa1-5507-432a-8ad8-c61b860f3052",
+                            "to": "111ede80-74cd-4c94-80e0-610d471eadcb",
+                        },
+                    ],
+                },
+            }
+        ]
+
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+
+        result, errors = compose_pptx(
+            template_files=[self.template_path],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+            use_tagged_layouts=True,
+        )
+
+        # Should succeed without errors
+        self.assertIsNotNone(result)
+        self.assertIsNone(errors)
+        self.assertTrue(os.path.exists(output_file))
+
+        # Verify the output
+        prs = Presentation(output_file)
+        self.assertEqual(len(prs.slides), 1)
+
+        # Check that all nodes were created
+        slide = prs.slides[0]
+        # Should have 6 nodes + 2 connectors (and maybe layout box)
+        self.assertGreater(len(slide.shapes), 6)
 
 
 if __name__ == "__main__":
