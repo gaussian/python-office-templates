@@ -686,6 +686,97 @@ class TestGraphsUnit(unittest.TestCase):
         # Should have 6 nodes + 2 connectors (and maybe layout box)
         self.assertGreater(len(slide.shapes), 6)
 
+    def test_enormous_graph_auto_scaling(self):
+        """Test that enormous graphs automatically scale to fit within PowerPoint limits.
+
+        PowerPoint has a maximum slide dimension of 56 inches. For very large graphs
+        that would exceed this limit, the system should automatically scale down
+        positions, node sizes, and font sizes to fit.
+        """
+        slide_specs = [
+            {
+                "layout": "graph",
+                "graph": {
+                    "nodes": [
+                        {
+                            "id": "n1",
+                            "name": "Node 1",
+                            "detail": "Top Left",
+                            "position": {"x": 100, "y": 100},
+                        },
+                        {
+                            "id": "n2",
+                            "name": "Node 2",
+                            "detail": "Top Right",
+                            "position": {"x": 10000, "y": 100},
+                        },
+                        {
+                            "id": "n3",
+                            "name": "Node 3",
+                            "detail": "Bottom Left",
+                            "position": {"x": 100, "y": 8000},
+                        },
+                        {
+                            "id": "n4",
+                            "name": "Node 4",
+                            "detail": "Bottom Right",
+                            "position": {"x": 10000, "y": 8000},
+                        },
+                    ],
+                    "edges": [
+                        {"from": "n1", "to": "n2", "label": "Top edge"},
+                        {"from": "n1", "to": "n3", "label": "Left edge"},
+                        {"from": "n2", "to": "n4", "label": "Right edge"},
+                        {"from": "n3", "to": "n4", "label": "Bottom edge"},
+                    ],
+                },
+            }
+        ]
+
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+
+        result, errors = compose_pptx(
+            template_files=[self.template_path],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+            use_tagged_layouts=True,
+        )
+
+        # Should succeed without errors
+        self.assertIsNotNone(result)
+        self.assertIsNone(errors)
+        self.assertTrue(os.path.exists(output_file))
+
+        # Verify the output
+        prs = Presentation(output_file)
+        self.assertEqual(len(prs.slides), 1)
+
+        # Most importantly, verify slide dimensions are within PowerPoint limits
+        # Convert from EMUs to inches (914400 EMUs = 1 inch)
+        width_inches = prs.slide_width / 914400
+        height_inches = prs.slide_height / 914400
+
+        # Without scaling, this graph would be ~108" x 86", which exceeds the 56" limit
+        # Verify it has been scaled to fit
+        self.assertLessEqual(
+            width_inches,
+            56,
+            f"Slide width {width_inches:.2f} exceeds PowerPoint's 56 inch limit",
+        )
+        self.assertLessEqual(
+            height_inches,
+            56,
+            f"Slide height {height_inches:.2f} exceeds PowerPoint's 56 inch limit",
+        )
+
+        # Verify the graph was actually scaled down (not just using minimum size)
+        # The width should be close to 56 inches since it's the limiting dimension
+        self.assertGreater(
+            width_inches, 50, "Graph should be scaled to use available space"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

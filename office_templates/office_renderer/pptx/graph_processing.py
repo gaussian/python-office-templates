@@ -17,6 +17,10 @@ from office_templates.templating.core import process_text_recursive
 # Frontend graph libraries typically use pixel coordinates at 96 DPI
 PIXELS_PER_INCH = 96
 
+# PowerPoint slide dimension limits (in inches)
+MAX_SLIDE_DIMENSION = 56  # Maximum dimension allowed by PowerPoint
+MIN_SLIDE_DIMENSION = 1  # Minimum dimension allowed by PowerPoint
+
 
 def _pixels_to_inches(pixels: float) -> float:
     """
@@ -79,8 +83,8 @@ def process_graph_slide(
             errors.append(f"Slide {slide_number}: 'edges' must be a list")
             return
 
-        # Calculate required slide dimensions
-        slide_width, slide_height = _calculate_slide_dimensions(
+        # Calculate required slide dimensions and scaling factor
+        slide_width, slide_height, scale_factor = _calculate_slide_dimensions_and_scale(
             nodes, errors, slide_number
         )
 
@@ -92,7 +96,13 @@ def process_graph_slide(
         node_shapes = {}
         for node in nodes:
             shape = _create_node_shape(
-                slide, node, global_context, check_permissions, errors, slide_number
+                slide,
+                node,
+                global_context,
+                check_permissions,
+                errors,
+                slide_number,
+                scale_factor,
             )
             if shape:
                 node_shapes[node["id"]] = shape
@@ -107,17 +117,21 @@ def process_graph_slide(
                 check_permissions,
                 errors,
                 slide_number,
+                scale_factor,
             )
 
     except Exception as e:
         errors.append(f"Slide {slide_number}: Error processing graph: {e}")
 
 
-def _calculate_slide_dimensions(
+def _calculate_slide_dimensions_and_scale(
     nodes: list[dict], errors: list[str], slide_number: int
-) -> tuple[float, float]:
+) -> tuple[float, float, float]:
     """
-    Calculate the required slide dimensions to fit all nodes.
+    Calculate the required slide dimensions to fit all nodes and scaling factor.
+
+    For very large graphs that would exceed PowerPoint's 56-inch limit, this function
+    calculates a scaling factor to fit the graph within the allowed dimensions.
 
     Args:
         nodes: List of node dictionaries with position in pixels
@@ -125,13 +139,13 @@ def _calculate_slide_dimensions(
         slide_number: Slide number for error reporting
 
     Returns:
-        Tuple of (width, height) in inches
+        Tuple of (width, height, scale_factor) in inches and scale factor
     """
     # Default minimum slide size (standard 16:9)
     min_width = 10
     min_height = 7.5
 
-    # Calculate bounds from node positions
+    # Calculate bounds from node positions (in inches, before scaling)
     max_x = min_width
     max_y = min_height
 
@@ -164,7 +178,19 @@ def _calculate_slide_dimensions(
         max_x = max(max_x, node_right + 1)  # Add 1 inch margin
         max_y = max(max_y, node_bottom + 1)
 
-    return max_x, max_y
+    # Calculate scaling factor if dimensions exceed PowerPoint's limits
+    scale_factor = 1.0
+    if max_x > MAX_SLIDE_DIMENSION or max_y > MAX_SLIDE_DIMENSION:
+        # Scale down to fit within the maximum dimension
+        scale_x = MAX_SLIDE_DIMENSION / max_x if max_x > MAX_SLIDE_DIMENSION else 1.0
+        scale_y = MAX_SLIDE_DIMENSION / max_y if max_y > MAX_SLIDE_DIMENSION else 1.0
+        scale_factor = min(scale_x, scale_y)
+
+        # Apply scaling to dimensions
+        max_x = max_x * scale_factor
+        max_y = max_y * scale_factor
+
+    return max_x, max_y, scale_factor
 
 
 def _create_node_shape(
@@ -174,9 +200,19 @@ def _create_node_shape(
     check_permissions: Optional[Callable[[object], bool]],
     errors: list[str],
     slide_number: int,
+    scale_factor: float = 1.0,
 ):
     """
     Create a node shape on the slide.
+
+    Args:
+        slide: The slide to add the shape to
+        node: Node dictionary with position and content
+        global_context: Global context for template processing
+        check_permissions: Permission checking function
+        errors: List to append errors to
+        slide_number: Slide number for error reporting
+        scale_factor: Scaling factor to apply to positions and fonts
 
     Returns:
         The created shape or None if creation failed
@@ -214,11 +250,11 @@ def _create_node_shape(
                 node["detail"], global_context, check_permissions
             )
 
-        # Convert pixel positions to inches
-        left = Inches(_pixels_to_inches(position["x"]))
-        top = Inches(_pixels_to_inches(position["y"]))
-        width = Inches(2.5)  # Default width
-        height = Inches(1.5)  # Default height, will auto-expand
+        # Convert pixel positions to inches and apply scaling
+        left = Inches(_pixels_to_inches(position["x"]) * scale_factor)
+        top = Inches(_pixels_to_inches(position["y"]) * scale_factor)
+        width = Inches(2.5 * scale_factor)  # Default width, scaled
+        height = Inches(1.5 * scale_factor)  # Default height, will auto-expand, scaled
 
         shape = slide.shapes.add_shape(1, left, top, width, height)  # MSO_SHAPE.RECTANGLE
 
@@ -226,24 +262,24 @@ def _create_node_shape(
         shape.fill.solid()
         shape.fill.fore_color.rgb = RGBColor(173, 216, 230)  # Light blue
         shape.line.color.rgb = RGBColor(0, 0, 0)  # Black border
-        shape.line.width = Pt(1)
+        shape.line.width = Pt(1 * scale_factor)
 
         # Add text to shape
         text_frame = shape.text_frame
         text_frame.clear()  # Clear default paragraph
         text_frame.word_wrap = True
 
-        # Add name (larger font)
+        # Add name (larger font) - font size scales with the graph
         p = text_frame.paragraphs[0]
         p.text = name
-        p.font.size = Pt(14)
+        p.font.size = Pt(int(14 * scale_factor))
         p.font.bold = True
 
-        # Add detail if present (smaller font)
+        # Add detail if present (smaller font) - font size scales with the graph
         if detail:
             p = text_frame.add_paragraph()
             p.text = detail
-            p.font.size = Pt(10)
+            p.font.size = Pt(int(10 * scale_factor))
 
         # Enable auto-fit
         text_frame.auto_size = 1  # MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
@@ -271,9 +307,20 @@ def _create_edge_connector(
     check_permissions: Optional[Callable[[object], bool]],
     errors: list[str],
     slide_number: int,
+    scale_factor: float = 1.0,
 ):
     """
     Create an edge connector between two nodes.
+
+    Args:
+        slide: The slide to add the connector to
+        edge: Edge dictionary with from/to node IDs
+        node_shapes: Dictionary of node shapes by ID
+        global_context: Global context for template processing
+        check_permissions: Permission checking function
+        errors: List to append errors to
+        slide_number: Slide number for error reporting
+        scale_factor: Scaling factor to apply to line widths and fonts
 
     Returns:
         The created connector or None if creation failed
@@ -320,9 +367,9 @@ def _create_edge_connector(
         connector.begin_connect(from_shape, 3)  # Right connection point
         connector.end_connect(to_shape, 1)  # Left connection point
 
-        # Style the connector
+        # Style the connector - line width scales with the graph
         connector.line.color.rgb = RGBColor(0, 0, 0)  # Black line
-        connector.line.width = Pt(1.5)
+        connector.line.width = Pt(1.5 * scale_factor)
 
         # Add label if present
         if "label" in edge and edge["label"]:
@@ -334,12 +381,16 @@ def _create_edge_connector(
             mid_x = (connector.begin_x + connector.end_x) // 2
             mid_y = (connector.begin_y + connector.end_y) // 2
 
+            # Label box dimensions scale with the graph
             label_box = slide.shapes.add_textbox(
-                mid_x - Inches(0.5), mid_y - Inches(0.25), Inches(1), Inches(0.5)
+                mid_x - Inches(0.5 * scale_factor),
+                mid_y - Inches(0.25 * scale_factor),
+                Inches(1 * scale_factor),
+                Inches(0.5 * scale_factor),
             )
 
             label_box.text_frame.text = label_text
-            label_box.text_frame.paragraphs[0].font.size = Pt(9)
+            label_box.text_frame.paragraphs[0].font.size = Pt(int(9 * scale_factor))
             label_box.fill.solid()
             label_box.fill.fore_color.rgb = RGBColor(255, 255, 255)  # White background
 
