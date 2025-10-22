@@ -48,6 +48,46 @@ You can experiment with the example files in `office_templates/raw_templates` to
 
 Chart data sheets can also contain placeholders so your graphs update automatically.
 
+## Composing Presentations
+
+### Creating Presentations Without Templates
+
+The `compose_pptx` function can create presentations without any template files by using PowerPoint's default layouts:
+
+```python
+from office_templates.office_renderer import compose_pptx
+
+slide_specs = [
+    {
+        "layout": "Title Slide",
+        "placeholders": ["My Presentation", "No template needed"],
+    },
+    {
+        "layout": "Title and Content",
+        "placeholders": ["Content Slide", "Uses default layouts"],
+    },
+]
+
+result, errors = compose_pptx(
+    template_files=None,  # or [] - both work!
+    slide_specs=slide_specs,
+    global_context={},
+    output="output.pptx",
+)
+```
+
+Available default layouts include:
+- Title Slide
+- Title and Content
+- Section Header
+- Two Content
+- Comparison
+- Title Only
+- Blank
+- Content with Caption
+- Picture with Caption
+- And more...
+
 ## Creating Node/Edge Graphs
 
 The library can programmatically generate node/edge graph visualizations in PowerPoint presentations using the `compose_pptx` function. This is useful for creating architecture diagrams, flowcharts, network topologies, and organizational charts.

@@ -236,8 +236,8 @@ class TestPPTXComposition(unittest.TestCase):
             any("Layout 'NonExistentLayout' not found" in error for error in errors)
         )
 
-    def test_compose_with_no_template_files(self):
-        """Test error handling when no template files are provided."""
+    def test_compose_with_no_template_files_invalid_layout(self):
+        """Test error handling when no template files and invalid layout is specified."""
         slide_specs = [{"layout": "test", "content": "Test"}]
 
         output_file = tempfile.mktemp(suffix=".pptx")
@@ -250,10 +250,10 @@ class TestPPTXComposition(unittest.TestCase):
             output=output_file,
         )
 
-        # Should fail with errors
+        # Should fail with errors because 'test' is not a valid default layout
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
-        self.assertTrue(any("No template files provided" in error for error in errors))
+        self.assertTrue(any("Layout 'test' not found" in error for error in errors))
 
     def test_compose_with_no_slides(self):
         """Test error handling when no slides are specified."""
@@ -344,6 +344,119 @@ class TestPPTXComposition(unittest.TestCase):
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
         self.assertTrue(any("cannot contain %loop%" in error for error in errors))
+
+    def test_compose_without_template_files(self):
+        """Test composition without any template files using default layouts."""
+        slide_specs = [
+            {"layout": "Title Slide", "content": "Test slide with default layout"},
+            {"layout": "Blank", "content": "Another test slide"},
+        ]
+
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+
+        result, errors = compose_pptx(
+            template_files=[],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+        )
+
+        # Should succeed
+        self.assertIsNotNone(result)
+        self.assertIsNone(errors)
+
+        # Check output
+        self.assertTrue(os.path.exists(output_file))
+        prs = Presentation(output_file)
+        self.assertEqual(len(prs.slides), 2)
+
+    def test_compose_without_template_files_none(self):
+        """Test composition with template_files=None (default parameter)."""
+        slide_specs = [
+            {"layout": "Title Slide", "content": "Test with None"},
+            {"layout": "Title and Content", "content": "Second slide"},
+        ]
+
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+
+        result, errors = compose_pptx(
+            template_files=None,
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+        )
+
+        # Should succeed
+        self.assertIsNotNone(result)
+        self.assertIsNone(errors)
+
+        # Check output
+        self.assertTrue(os.path.exists(output_file))
+        prs = Presentation(output_file)
+        self.assertEqual(len(prs.slides), 2)
+
+    def test_compose_without_template_files_with_placeholders(self):
+        """Test composition without template files but with placeholder processing."""
+        slide_specs = [
+            {
+                "layout": "Title Slide",
+                "placeholders": ["{{ title }}", "{{ user.name }}"],
+            },
+        ]
+
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+
+        result, errors = compose_pptx(
+            template_files=[],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+        )
+
+        # Should succeed
+        self.assertIsNotNone(result)
+        self.assertIsNone(errors)
+
+        # Check output
+        self.assertTrue(os.path.exists(output_file))
+        prs = Presentation(output_file)
+        self.assertEqual(len(prs.slides), 1)
+
+    def test_compose_without_template_files_all_default_layouts(self):
+        """Test that all default layouts are available when no template files provided."""
+        # Use various default layouts
+        slide_specs = [
+            {"layout": "Title Slide"},
+            {"layout": "Title and Content"},
+            {"layout": "Section Header"},
+            {"layout": "Two Content"},
+            {"layout": "Comparison"},
+            {"layout": "Title Only"},
+            {"layout": "Blank"},
+            {"layout": "Content with Caption"},
+        ]
+
+        output_file = tempfile.mktemp(suffix=".pptx")
+        self.temp_files.append(output_file)
+
+        result, errors = compose_pptx(
+            template_files=[],
+            slide_specs=slide_specs,
+            global_context=self.context,
+            output=output_file,
+        )
+
+        # Should succeed
+        self.assertIsNotNone(result)
+        self.assertIsNone(errors)
+
+        # Check output
+        self.assertTrue(os.path.exists(output_file))
+        prs = Presentation(output_file)
+        self.assertEqual(len(prs.slides), 8)
 
 
 if __name__ == "__main__":

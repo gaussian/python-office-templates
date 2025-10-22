@@ -470,8 +470,8 @@ class TestGraphsUnit(unittest.TestCase):
         self.assertIsNotNone(errors)
         self.assertTrue(any("No slides specified" in error for error in errors))
 
-    def test_no_template_files_error(self):
-        """Test error handling when no template files are provided."""
+    def test_no_template_files_invalid_layout_error(self):
+        """Test error handling when no template files and invalid layout used."""
         slide_specs = [
             {
                 "layout": "graph",
@@ -497,7 +497,8 @@ class TestGraphsUnit(unittest.TestCase):
 
         self.assertIsNone(result)
         self.assertIsNotNone(errors)
-        self.assertTrue(any("No template files provided" in error for error in errors))
+        # Should fail because "graph" is not a default layout name
+        self.assertTrue(any("Layout 'graph' not found" in error for error in errors))
 
     def test_node_with_parent_placeholder(self):
         """Test that nodes with parent key are accepted (placeholder functionality)."""
