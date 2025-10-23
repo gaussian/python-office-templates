@@ -7,22 +7,24 @@ from office_templates.templating.core import process_text_recursive
 from .render import process_single_slide
 from .layouts import build_layout_mapping
 from .utils import copy_slide_across_presentations
+from .graph_processing import process_graph_slide
 
 
 def compose_pptx(
-    template_files: list,
-    slide_specs: list[dict],
-    global_context: dict,
-    output,
+    template_files: Optional[list] = None,
+    slide_specs: list[dict] = None,
+    global_context: dict = None,
+    output = None,
     check_permissions: Optional[Callable[[object], bool]] = None,
     use_tagged_layouts=False,
     use_all_slides_as_layouts_by_title=False,
 ):
     """
     Compose a PPTX deck using layout slides from multiple template files.
+    If no template files are provided, creates a blank presentation with default layouts.
 
     Args:
-        template_files: List of template file paths or file-like objects
+        template_files: List of template file paths or file-like objects (optional, defaults to empty list)
         slide_specs: List of slide dictionaries, each containing 'layout' key and context data
         global_context: Global context dictionary
         output: Output file path or file-like object
@@ -30,17 +32,43 @@ def compose_pptx(
         use_tagged_layouts: If True, include slides with % layout XXX % tags
         use_all_slides_as_layouts_by_title: If True, use all slides as layouts by title
 
+    Slide Specification:
+        Each slide_spec can be a regular slide or a graph slide:
+        
+        Regular slide:
+            - layout: Layout name (required)
+            - placeholders: List of placeholder texts (optional)
+            - Any other context data for template processing
+            
+        Graph slide:
+            - layout: Layout name (required)
+            - graph: Dict containing 'nodes' and 'edges' (optional)
+                - nodes: List of node dicts with:
+                    - id (str, required): Unique identifier
+                    - name (str, required): Display name
+                    - detail (str, optional): Additional detail text
+                    - position (dict, required): {"x": inches, "y": inches}
+                    - parent (str, optional): Parent node ID (placeholder)
+                - edges: List of edge dicts with:
+                    - from (str, required): Source node ID
+                    - to (str, required): Target node ID
+                    - label (str, optional): Edge label text
+
     Returns:
         Tuple of (output, errors) - errors is None if successful, list of errors otherwise
     """
     errors: list[str] = []
 
     try:
-        # Validate inputs
-        if not template_files:
-            errors.append("No template files provided")
-            return None, errors
+        # Set defaults for optional parameters
+        if template_files is None:
+            template_files = []
+        if slide_specs is None:
+            slide_specs = []
+        if global_context is None:
+            global_context = {}
 
+        # Validate inputs
         if not slide_specs:
             errors.append("No slides specified")
             return None, errors
@@ -52,16 +80,17 @@ def compose_pptx(
             use_all_slides_as_layouts_by_title=use_all_slides_as_layouts_by_title,
         )
 
-        if not layout_mapping:
-            errors.append("No layout slides found in template files")
-            return None, errors
-
-        # Use the first template as the base presentation
-        if isinstance(template_files[0], str):
-            base_prs = Presentation(template_files[0])
+        # Create base presentation
+        if template_files:
+            # Use the first template as the base presentation
+            if isinstance(template_files[0], str):
+                base_prs = Presentation(template_files[0])
+            else:
+                template_files[0].seek(0)
+                base_prs = Presentation(template_files[0])
         else:
-            template_files[0].seek(0)
-            base_prs = Presentation(template_files[0])
+            # Create a blank presentation with default layouts
+            base_prs = Presentation()
 
         # Remove all slides from the base presentation to create a blank deck
         sld_ids = base_prs.slides._sldIdLst
@@ -126,7 +155,19 @@ def compose_pptx(
                         errors=errors,
                     )
 
-                # Process the slide
+                # Check if this is a graph slide
+                if "graph" in slide_spec:
+                    process_graph_slide(
+                        slide=new_slide,
+                        graph=slide_spec["graph"],
+                        base_prs=base_prs,
+                        global_context=global_context,
+                        check_permissions=check_permissions,
+                        slide_number=slide_number,
+                        errors=errors,
+                    )
+                
+                # Process the slide for template variables
                 process_single_slide(
                     slide=new_slide,
                     context=slide_context,
@@ -189,3 +230,5 @@ def process_placeholders(
                 errors.append(
                     f"Error processing placeholder {placeholder_index} (slide {slide_number}): {e}"
                 )
+
+
