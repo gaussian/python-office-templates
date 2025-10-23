@@ -2,6 +2,20 @@
 
 Office Templates is a Python library turns PowerPoint (PPTX) and Excel (XLSX) files into reusable templates.  Placeholders inside those templates are resolved using provided context so that you can generate templated documents without hard‑coding content.
 
+## Installation
+
+Install using uv:
+
+```bash
+uv add office-templates
+```
+
+For Excel support, install with the `xlsx` extra:
+
+```bash
+uv add office-templates[xlsx]
+```
+
 ## Key Features
 
 * **PowerPoint and Excel rendering** – supply a PPTX or XLSX file and a context dictionary to produce a finished document.
