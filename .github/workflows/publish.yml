@@ -1,0 +1,42 @@
+name: Publish to PyPI
+
+on:
+  workflow_run:
+    workflows: ["Release New Version"]
+    types: [completed]
+
+jobs:
+  publish-to-pypi:
+    name: Publish Python distribution to PyPI
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/office-templates
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout latest version tag
+        run: git checkout $(git describe --tags --abbrev=0)
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Build release distributions
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -19,13 +19,13 @@ jobs:
     steps:
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
           # cache: 'pip'
@@ -118,18 +118,16 @@ jobs:
           git push origin v${{ steps.versioning.outputs.newVersion }}
 
       - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.versioning.outputs.newVersion }}
-          name: v${{ steps.versioning.outputs.newVersion }}
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-          generate_release_notes: true
+        run: |
+          gh release create \
+            "v${{ steps.versioning.outputs.newVersion }}" \
+            --title "v${{ steps.versioning.outputs.newVersion }}" \
+            --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout the merged development branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }} # This is the branch that was merged into main
           fetch-depth: 0 # Fetch all history for all branches and tags
@@ -143,40 +141,3 @@ jobs:
           git merge origin/main --no-edit -X ours
           # If conflicts arise and are resolved, or if no conflicts occur, proceed to push
           git push origin HEAD:${{ github.head_ref }}
-
-      - name: Build release distributions
-        run: |
-          python -m pip install build
-          python -m build
-
-      - name: Store the distribution packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-
-  publish-to-pypi:
-    name: >-
-      Publish Python 🐍 distribution 📦 to PyPI
-    
-    needs:
-      - build-new-version
-    
-    runs-on: ubuntu-latest
-    
-    environment:
-      name: pypi
-      url: https://pypi.org/p/office-templates
-    
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
-    
-    steps:
-      - name: Download all the dists
-        uses: actions/download-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-      
-      - name: Publish distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
