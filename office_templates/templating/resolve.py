@@ -131,7 +131,9 @@ def resolve_formatted_tag(
             break
 
     # Resolve the tag expression (without the formatting part).
-    value = resolve_tag(value_expr, context=context, check_permissions=check_permissions)
+    value = resolve_tag(
+        value_expr, context=context, check_permissions=check_permissions
+    )
 
     # Perform mathematical operations if applicable.
     if math_operator and math_operand is not None:
@@ -323,19 +325,23 @@ def resolve_segment(
 
     # If the current object is a list, check if we're doing numeric indexing
     if isinstance(current, list):
-        # If the attribute name is numeric and we have no call args or filters, 
+        # If the attribute name is numeric and we have no call args or filters,
         # treat this as list indexing rather than applying to each element
         if attr_name.isdigit() and call_args_str is None and filter_expr is None:
             try:
                 index = int(attr_name)
                 return current[index]
             except IndexError:
-                raise MissingDataException(f"Index {attr_name} out of bounds for list of length {len(current)}")
+                raise MissingDataException(
+                    f"Index {attr_name} out of bounds for list of length {len(current)}"
+                )
         else:
             # Apply the segment resolution to each element (existing behavior)
             results = []
             for item in current:
-                res = resolve_segment(item, segment, check_permissions=check_permissions)
+                res = resolve_segment(
+                    item, segment, check_permissions=check_permissions
+                )
                 if isinstance(res, list):
                     results.extend(res)
                 else:

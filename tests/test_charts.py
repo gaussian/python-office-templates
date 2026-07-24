@@ -86,7 +86,6 @@ class TestProcessChart(unittest.TestCase):
                 return_value=False,
             ),
         ):
-
             # Call process_chart
             process_chart(dummy_chart, context, None)
 

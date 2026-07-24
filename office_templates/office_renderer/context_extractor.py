@@ -49,22 +49,22 @@ def extract_top_level_context_keys_from_text(text: str) -> dict[str, list[str]]:
 def _extract_texts_from_shape(shape, loop_variables: set) -> list[str]:
     """
     Recursively extract texts from a shape, handling grouped shapes.
-    
+
     Args:
         shape: The shape to process
         loop_variables: Set to collect loop variables to ignore later
-        
+
     Returns:
         List of text strings found in the shape
     """
     texts = []
-    
+
     # Handle grouped shapes recursively
     if hasattr(shape, "shape_type") and shape.shape_type == MSO_SHAPE_TYPE.GROUP:
         for grouped_shape in shape.shapes:
             texts.extend(_extract_texts_from_shape(grouped_shape, loop_variables))
         return texts
-    
+
     # Check for loop directives
     if hasattr(shape, "text_frame"):
         loop_var, loop_collection = extract_loop_directive(shape.text_frame.text)
@@ -77,7 +77,7 @@ def _extract_texts_from_shape(shape, loop_variables: set) -> list[str]:
         for paragraph in shape.text_frame.paragraphs:
             merge_split_placeholders(paragraph)
             texts.append(paragraph.text)
-            
+
     # Process table cells.
     if getattr(shape, "has_table", False):
         for row in shape.table.rows:
@@ -86,14 +86,14 @@ def _extract_texts_from_shape(shape, loop_variables: set) -> list[str]:
                     for paragraph in cell.text_frame.paragraphs:
                         merge_split_placeholders(paragraph)
                         texts.append(paragraph.text)
-                        
+
     # Process chart spreadsheets.
     if getattr(shape, "has_chart", False):
         raw_data = get_raw_chart_data(shape.chart)
         for col in raw_data:
             for item in col:
                 texts.append(str(item))
-    
+
     return texts
 
 

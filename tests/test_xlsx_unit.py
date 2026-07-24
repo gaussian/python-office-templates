@@ -133,7 +133,9 @@ class TestXlsxUnit(unittest.TestCase):
 
     @patch("office_templates.office_renderer.xlsx.render.get_load_workbook")
     @patch("office_templates.office_renderer.xlsx.render.process_worksheet")
-    def test_render_xlsx_with_error(self, mock_process_worksheet, mock_get_load_workbook):
+    def test_render_xlsx_with_error(
+        self, mock_process_worksheet, mock_get_load_workbook
+    ):
         """Test handling of errors during rendering."""
         # Set up mock workbook
         mock_workbook = MagicMock()
@@ -154,7 +156,9 @@ class TestXlsxUnit(unittest.TestCase):
                 template=self.temp_input,
                 context=self.context,
                 output=self.temp_output,
-                check_permissions=lambda obj: has_view_permission(obj, self.request_user),
+                check_permissions=lambda obj: has_view_permission(
+                    obj, self.request_user
+                ),
             )
 
         # Verify error handling

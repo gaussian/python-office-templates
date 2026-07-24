@@ -97,5 +97,3 @@ def format_value(value: list | str, format_expr: str):
         raise BadTagException(
             f"Error formatting value '{value}' with format '{format_expr}': {str(e)}"
         )
-
-

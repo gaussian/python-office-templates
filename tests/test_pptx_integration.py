@@ -49,7 +49,9 @@ class TestRendererIntegration(unittest.TestCase):
         textbox = self.slide.shapes.add_textbox(
             Inches(0.5), Inches(0.5), Inches(4), Inches(1)
         )
-        textbox.text_frame.text = "Welcome, {{ user.name }}. Program: {{ program.name }}."
+        textbox.text_frame.text = (
+            "Welcome, {{ user.name }}. Program: {{ program.name }}."
+        )
         self.textbox_index = len(self.slide.shapes) - 1
         # Add a table with one row, one column.
         rows, cols = 1, 1
@@ -243,7 +245,9 @@ class TestRendererIntegration(unittest.TestCase):
 
         from PIL import Image
 
-        img = Image.new("RGB", (200, 100), color="red")  # Use different dimensions to test aspect ratio
+        img = Image.new(
+            "RGB", (200, 100), color="red"
+        )  # Use different dimensions to test aspect ratio
         img_file = tempfile.mktemp(suffix=".png")
         img.save(img_file)
 
