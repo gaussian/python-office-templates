@@ -125,7 +125,7 @@ class TestXlsxIntegration(unittest.TestCase):
         expected_names = ["Alice", "Bob", "Carol"]
         for i, name in enumerate(expected_names):
             # A2 should be Alice, A3 should be Bob, A4 should be Carol
-            cell_pos = f"A{i+2}"
+            cell_pos = f"A{i + 2}"
             self.assertEqual(ws_employees[cell_pos].value, name)
 
         # Check Numbers sheet - should have converted strings to floats
@@ -138,11 +138,13 @@ class TestXlsxIntegration(unittest.TestCase):
         """Test the renderer with file-like objects instead of paths."""
         # Create file-like objects
         with open(self.temp_input, "rb") as input_file:
-            with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as output_file:
+            with tempfile.NamedTemporaryFile(
+                suffix=".xlsx", delete=False
+            ) as output_file:
                 # Run the renderer with file objects
-                check_permissions = lambda obj: has_view_permission(
-                    obj, self.request_user
-                )
+                def check_permissions(obj):
+                    return has_view_permission(obj, self.request_user)
+
                 rendered, errors = render_xlsx(
                     input_file, self.context, output_file, check_permissions
                 )
@@ -177,7 +179,9 @@ class TestXlsxIntegration(unittest.TestCase):
         deny_context = {"deny_obj": deny_dept}
 
         # Run renderer - should naturally fail due to permission denied
-        check_permissions = lambda obj: has_view_permission(obj, self.request_user)
+        def check_permissions(obj):
+            return has_view_permission(obj, self.request_user)
+
         rendered, errors = render_xlsx(
             test_input, deny_context, test_output, check_permissions
         )
@@ -224,7 +228,8 @@ class TestXlsxIntegration(unittest.TestCase):
             # Check that the error message mentions the cell overwrite problem
             self.assertTrue(
                 any(
-                    "Cannot expand list into non-empty cell" in str(err) for err in errors
+                    "Cannot expand list into non-empty cell" in str(err)
+                    for err in errors
                 )
             )
             self.assertTrue(any("A2" in str(err) for err in errors))

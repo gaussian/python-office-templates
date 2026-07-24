@@ -49,13 +49,13 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         # Content slide with tagged layout
         slide2 = prs.slides.add_slide(prs.slide_layouts[1])
         slide2.shapes.title.text = "Executive Summary"
-        
+
         # Add %layout% tag in its own shape
         layout_box = slide2.shapes.add_textbox(
             Inches(1), Inches(2), Inches(6), Inches(0.5)
         )
         layout_box.text_frame.text = "% layout summary %"
-        
+
         # Add template variable in separate shape
         content_box = slide2.shapes.add_textbox(
             Inches(1), Inches(3), Inches(6), Inches(1)
@@ -68,13 +68,13 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             Inches(1), Inches(0.5), Inches(8), Inches(1)
         )
         title_box.text_frame.text = "Sales Performance Chart"
-        
+
         # Add %layout% tag in its own shape
         layout_box = slide3.shapes.add_textbox(
             Inches(1), Inches(1.5), Inches(8), Inches(0.5)
         )
         layout_box.text_frame.text = "% layout chart %"
-        
+
         # Add template variable in separate shape
         chart_placeholder = slide3.shapes.add_textbox(
             Inches(1), Inches(2), Inches(8), Inches(4)
@@ -97,13 +97,13 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             Inches(1), Inches(0.5), Inches(8), Inches(1)
         )
         title_box.text_frame.text = "Monthly Data"
-        
+
         # Add %layout% tag in its own shape
         layout_box = slide1.shapes.add_textbox(
             Inches(1), Inches(1.5), Inches(8), Inches(0.5)
         )
         layout_box.text_frame.text = "% layout data_table %"
-        
+
         # Add template variable in separate shape
         table_marker = slide1.shapes.add_textbox(
             Inches(1), Inches(2), Inches(8), Inches(3)
@@ -114,7 +114,11 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         slide2 = prs.slides.add_slide(prs.slide_layouts[1])
         slide2.shapes.title.text = "Top Products"
         if len(slide2.shapes) > 1:
-            slide2.shapes[1].text_frame.text = "Our best-selling products this quarter\n{{ product_summary }}"
+            slide2.shapes[
+                1
+            ].text_frame.text = (
+                "Our best-selling products this quarter\n{{ product_summary }}"
+            )
 
         # Save template
         temp_file = tempfile.mktemp(suffix=".pptx")
@@ -193,7 +197,9 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
 
         # Slide 2: Executive summary with template processing
         slide2_text = self._extract_slide_text(prs.slides[1])
-        self.assertIn("3 months of strong performance", slide2_text)  # {{ data_count }} processed
+        self.assertIn(
+            "3 months of strong performance", slide2_text
+        )  # {{ data_count }} processed
 
         # Slide 3: Data table with processed title
         slide3_text = self._extract_slide_text(prs.slides[2])
@@ -211,20 +217,23 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
         for i, slide in enumerate(prs.slides):
             layout_shapes = []
             for shape in slide.shapes:
-                if hasattr(shape, 'text_frame') and hasattr(shape.text_frame, 'text'):
+                if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
                     text = shape.text_frame.text.strip()
                     if "% layout" in text and "%" in text:
                         layout_shapes.append(shape)
-            self.assertEqual(len(layout_shapes), 0, 
-                           f"Found %layout% shapes in output slide {i+1}: {[s.text_frame.text for s in layout_shapes]}")
+            self.assertEqual(
+                len(layout_shapes),
+                0,
+                f"Found %layout% shapes in output slide {i + 1}: {[s.text_frame.text for s in layout_shapes]}",
+            )
 
     def _extract_slide_text(self, slide):
         """Extract all text content from a slide for validation."""
         text_content = []
         for shape in slide.shapes:
-            if hasattr(shape, 'text'):
+            if hasattr(shape, "text"):
                 text_content.append(shape.text)
-            elif hasattr(shape, 'text_frame'):
+            elif hasattr(shape, "text_frame"):
                 text_content.append(shape.text_frame.text)
         return " ".join(text_content)
 
@@ -297,7 +306,9 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
                     placeholder_found = True
                     break
 
-        self.assertTrue(placeholder_found, "Placeholder processing should have occurred")
+        self.assertTrue(
+            placeholder_found, "Placeholder processing should have occurred"
+        )
 
     def test_error_handling_with_complex_scenarios(self):
         """Test error handling in complex composition scenarios."""
@@ -307,7 +318,10 @@ class TestPPTXCompositionIntegration(unittest.TestCase):
             # Invalid layout
             {"layout": "NonExistentLayout", "content": "This should fail"},
             # Valid slide after error
-            {"layout": "Top Products", "product_summary": "This should also be processed"},
+            {
+                "layout": "Top Products",
+                "product_summary": "This should also be processed",
+            },
         ]
 
         output_file = tempfile.mktemp(suffix=".pptx")

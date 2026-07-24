@@ -18,27 +18,27 @@ class TestGroupedShapesUnit(unittest.TestCase):
         """Create a test presentation with grouped shapes."""
         self.prs = Presentation()
         self.slide = self.prs.slides.add_slide(self.prs.slide_layouts[5])
-        
+
         # Create some individual shapes to group
         self.text_box1 = self.slide.shapes.add_textbox(
             Inches(1), Inches(1), Inches(2), Inches(1)
         )
         self.text_box1.text_frame.text = "{{ grouped_variable }}"
-        
+
         self.text_box2 = self.slide.shapes.add_textbox(
             Inches(1), Inches(2.5), Inches(2), Inches(1)
         )
         self.text_box2.text_frame.text = "Static text: {{ another_var }}"
-        
+
         # Group the shapes
         self.group = self.slide.shapes.add_group_shape([self.text_box1, self.text_box2])
-        
+
         # Test context
         self.context = {
             "grouped_variable": "Rendered grouped text",
             "another_var": "Rendered another text",
         }
-        
+
         # Mock objects for testing
         self.mock_check_permissions = Mock(return_value=True)
         self.errors = []
@@ -51,16 +51,16 @@ class TestGroupedShapesUnit(unittest.TestCase):
             if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                 group_shape = shape
                 break
-        
+
         self.assertIsNotNone(group_shape, "Should find a group shape")
         self.assertEqual(len(group_shape.shapes), 2, "Group should contain 2 shapes")
-        
+
         # Verify the grouped shapes have the expected text
         texts = []
         for shape in group_shape.shapes:
             if hasattr(shape, "text_frame") and shape.text_frame:
                 texts.append(shape.text_frame.text)
-        
+
         self.assertIn("{{ grouped_variable }}", texts)
         self.assertIn("Static text: {{ another_var }}", texts)
 
@@ -72,7 +72,7 @@ class TestGroupedShapesUnit(unittest.TestCase):
             if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                 group_shape = shape
                 break
-        
+
         # Process the group shape with updated implementation
         process_shape_content(
             shape=group_shape,
@@ -82,17 +82,17 @@ class TestGroupedShapesUnit(unittest.TestCase):
             check_permissions=self.mock_check_permissions,
             errors=self.errors,
         )
-        
+
         # Check that variables inside the group were processed
         group_texts = []
         for shape in group_shape.shapes:
             if hasattr(shape, "text_frame") and shape.text_frame:
                 group_texts.append(shape.text_frame.text)
-        
+
         # Variables should now be processed
         self.assertIn("Rendered grouped text", group_texts)
         self.assertTrue(any("Rendered another text" in text for text in group_texts))
-        
+
         # Original variables should be replaced
         self.assertFalse(any("{{ grouped_variable }}" in text for text in group_texts))
         self.assertFalse(any("{{ another_var }}" in text for text in group_texts))
@@ -104,14 +104,14 @@ class TestGroupedShapesUnit(unittest.TestCase):
             Inches(4), Inches(1), Inches(2), Inches(1)
         )
         text_box3.text_frame.text = "{{ nested_var }}"
-        
+
         # Create a nested group (group within a group)
         # Note: This might not be directly possible via python-pptx API
         # but we should handle it if it exists in loaded files
-        
+
         # For now, just test that we handle the concept
         self.context["nested_var"] = "Nested rendered text"
-        
+
         # This test will be expanded once we implement recursive processing
 
     def tearDown(self):

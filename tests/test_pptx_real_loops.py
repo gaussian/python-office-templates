@@ -63,7 +63,9 @@ class TestRealPptxLoops(unittest.TestCase):
     def test_real_pptx_loop_functionality(self):
         """Test that loops work correctly in a real PPTX file."""
         # Render the template with the context
-        output, errors = render_pptx(self.temp_pptx, self.context, self.output_pptx, None)
+        output, errors = render_pptx(
+            self.temp_pptx, self.context, self.output_pptx, None
+        )
 
         # Ensure no errors occurred
         self.assertIsNone(errors, f"Errors occurred during rendering: {errors}")
@@ -74,10 +76,10 @@ class TestRealPptxLoops(unittest.TestCase):
         # Print all text content for debugging
         print("\nText content in all slides:")
         for i, slide in enumerate(prs.slides):
-            print(f"Slide {i+1}:")
+            print(f"Slide {i + 1}:")
             for j, shape in enumerate(slide.shapes):
                 if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
-                    print(f"  Shape {j+1}: '{shape.text_frame.text}'")
+                    print(f"  Shape {j + 1}: '{shape.text_frame.text}'")
 
         # Verify loop directive shapes have been deleted
         loop_directives_found = False
@@ -106,7 +108,9 @@ class TestRealPptxLoops(unittest.TestCase):
         for user in self.context["users"]:
             for slide in prs.slides:
                 for shape in slide.shapes:
-                    if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
+                    if hasattr(shape, "text_frame") and hasattr(
+                        shape.text_frame, "text"
+                    ):
                         if (
                             user["name"] in shape.text_frame.text
                             and user["email"] in shape.text_frame.text

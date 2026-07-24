@@ -256,7 +256,9 @@ def _create_node_shape(
         width = Inches(2.5 * scale_factor)  # Default width, scaled
         height = Inches(1.5 * scale_factor)  # Default height, will auto-expand, scaled
 
-        shape = slide.shapes.add_shape(1, left, top, width, height)  # MSO_SHAPE.RECTANGLE
+        shape = slide.shapes.add_shape(
+            1, left, top, width, height
+        )  # MSO_SHAPE.RECTANGLE
 
         # Configure shape appearance
         shape.fill.solid()

@@ -103,14 +103,14 @@ def get_tagged_layouts(prs):
 
         # Validate: only one %layout% shape per slide
         if len(layout_shapes) > 1:
-            raise LayoutError(f"Multiple %layout% shapes found on same slide")
+            raise LayoutError("Multiple %layout% shapes found on same slide")
 
         # If we found a layout, validate no loop directives on this slide
         if layout_id is not None:
             for shape in slide.shapes:
                 if is_loop_start(shape) or is_loop_end(shape):
                     raise LayoutError(
-                        f"Slide with %layout% cannot contain %loop% or %endloop% directives"
+                        "Slide with %layout% cannot contain %loop% or %endloop% directives"
                     )
 
             # Remove the %layout% shape

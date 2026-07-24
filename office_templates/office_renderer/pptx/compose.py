@@ -14,7 +14,7 @@ def compose_pptx(
     template_files: Optional[list] = None,
     slide_specs: list[dict] = None,
     global_context: dict = None,
-    output = None,
+    output=None,
     check_permissions: Optional[Callable[[object], bool]] = None,
     use_tagged_layouts=False,
     use_all_slides_as_layouts_by_title=False,
@@ -34,12 +34,12 @@ def compose_pptx(
 
     Slide Specification:
         Each slide_spec can be a regular slide or a graph slide:
-        
+
         Regular slide:
             - layout: Layout name (required)
             - placeholders: List of placeholder texts (optional)
             - Any other context data for template processing
-            
+
         Graph slide:
             - layout: Layout name (required)
             - graph: Dict containing 'nodes' and 'edges' (optional)
@@ -166,7 +166,7 @@ def compose_pptx(
                         slide_number=slide_number,
                         errors=errors,
                     )
-                
+
                 # Process the slide for template variables
                 process_single_slide(
                     slide=new_slide,
@@ -230,5 +230,3 @@ def process_placeholders(
                 errors.append(
                     f"Error processing placeholder {placeholder_index} (slide {slide_number}): {e}"
                 )
-
-
