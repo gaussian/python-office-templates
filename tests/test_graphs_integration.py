@@ -101,7 +101,11 @@ class TestGraphsIntegration(unittest.TestCase):
                             "to": "product_service",
                             "label": "Query",
                         },
-                        {"from": "auth_service", "to": "database", "label": "User Data"},
+                        {
+                            "from": "auth_service",
+                            "to": "database",
+                            "label": "User Data",
+                        },
                         {
                             "from": "product_service",
                             "to": "database",
@@ -435,10 +439,26 @@ class TestGraphsIntegration(unittest.TestCase):
                 "layout": "graph",
                 "graph": {
                     "nodes": [
-                        {"id": "n1", "name": "Node 1", "position": {"x": 100, "y": 100}},
-                        {"id": "n2", "name": "Node 2", "position": {"x": 1200, "y": 100}},
-                        {"id": "n3", "name": "Node 3", "position": {"x": 100, "y": 800}},
-                        {"id": "n4", "name": "Node 4", "position": {"x": 1200, "y": 800}},
+                        {
+                            "id": "n1",
+                            "name": "Node 1",
+                            "position": {"x": 100, "y": 100},
+                        },
+                        {
+                            "id": "n2",
+                            "name": "Node 2",
+                            "position": {"x": 1200, "y": 100},
+                        },
+                        {
+                            "id": "n3",
+                            "name": "Node 3",
+                            "position": {"x": 100, "y": 800},
+                        },
+                        {
+                            "id": "n4",
+                            "name": "Node 4",
+                            "position": {"x": 1200, "y": 800},
+                        },
                     ],
                     "edges": [
                         {"from": "n1", "to": "n2"},

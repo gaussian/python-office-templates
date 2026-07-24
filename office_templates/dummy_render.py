@@ -105,7 +105,11 @@ def main():
     # Dummy context matching common template patterns
     cohort = DummyCohort(name="Cohort A")
     user = DummyUser(
-        name="Alice", email="alice@example.com", cohort=cohort, impact=10, is_active=True
+        name="Alice",
+        email="alice@example.com",
+        cohort=cohort,
+        impact=10,
+        is_active=True,
     )
     bob = DummyUser(
         name="Bob", email="bob@test.com", cohort=cohort, impact=20, is_active=True

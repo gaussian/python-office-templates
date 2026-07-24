@@ -162,9 +162,7 @@ class TestTemplatingNormalMode(unittest.TestCase):
             mode="normal",
         )
         # Expected: "All emails: alice-three@example.com, bob@example.com, deny@example.com are active."
-        expected = (
-            f"All emails: {', '.join(u.email for u in self.program['users'])} are active."
-        )
+        expected = f"All emails: {', '.join(u.email for u in self.program['users'])} are active."
         self.assertEqual(result, expected)
 
     def test_mixed_text_list_multiple(self):
@@ -184,7 +182,10 @@ class TestTemplatingNormalMode(unittest.TestCase):
         tpl = "{{ program.users.email }}"
         # Now, with permission checking enabled, self.user3 ("DenyUser") should be filtered out.
         with self.assertRaises(PermissionDeniedException):
-            check_permissions = lambda obj: has_view_permission(obj, self.request_user)
+
+            def check_permissions(obj):
+                return has_view_permission(obj, self.request_user)
+
             process_text(
                 tpl,
                 self.context,
@@ -245,7 +246,10 @@ class TestTemplatingNormalMode(unittest.TestCase):
         denier = DenyAllUser()
         tpl = "{{ program.users.email }}"
         with self.assertRaises(PermissionDeniedException):
-            check_permissions = lambda obj: has_view_permission(obj, denier)
+
+            def check_permissions(obj):
+                return has_view_permission(obj, denier)
+
             process_text(
                 tpl,
                 self.context,
@@ -452,7 +456,9 @@ class TestTemplatingTableMode(unittest.TestCase):
         self.cohort = DummyCohort("Cohort A")
         self.user1 = DummyUser("Alice", "alice-three@example.com", is_active=True)
         self.user2 = DummyUser("Bob", "bob@example.com", is_active=True)
-        self.django_user = DummyDjangoUser("DenyUser", "deny@example.com", is_active=True)
+        self.django_user = DummyDjangoUser(
+            "DenyUser", "deny@example.com", is_active=True
+        )
         # program.users as a list (simulate queryset already converted to a list)
         self.program = {
             "users": [self.user1, self.user2, self.django_user],
@@ -551,7 +557,10 @@ class TestTemplatingTableMode(unittest.TestCase):
         denier = DenyAllUser()
         tpl = "{{ program.users.email }}"
         with self.assertRaises(PermissionDeniedException):
-            check_permissions = lambda obj: has_view_permission(obj, denier)
+
+            def check_permissions(obj):
+                return has_view_permission(obj, denier)
+
             process_text(
                 tpl,
                 self.context,

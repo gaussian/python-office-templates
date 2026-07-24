@@ -174,7 +174,6 @@ class DummyCellWrapper:
 
 
 class TestTables(unittest.TestCase):
-
     # --- clone_row_with_value ---
     @patch("pptx.table._Cell", new=DummyCell)
     @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
@@ -260,10 +259,12 @@ class TestTables(unittest.TestCase):
     @patch("pptx.table._Cell", new=DummyCell)
     @patch("office_templates.office_renderer.tables._Cell", new=DummyCell)
     @patch(
-        "office_templates.office_renderer.tables.process_text", return_value=["R1", "R2"]
+        "office_templates.office_renderer.tables.process_text",
+        return_value=["R1", "R2"],
     )
     @patch(
-        "office_templates.office_renderer.tables.get_matching_tags", return_value=["only"]
+        "office_templates.office_renderer.tables.get_matching_tags",
+        return_value=["only"],
     )
     def test_process_table_cell_pure_placeholder(self, *_):
         cw = DummyCellWrapper("{{ only }}")

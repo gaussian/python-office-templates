@@ -100,7 +100,10 @@ class TestRendererUnit(unittest.TestCase):
         # Retrieve entire user (Django-like object), forcing permission denial:
         self.textframe.paragraphs[0].text = "{{ user }}"
         self.prs.save(self.temp_input)
-        check_permissions = lambda obj: has_view_permission(obj, self.request_user)
+
+        def check_permissions(obj):
+            return has_view_permission(obj, self.request_user)
+
         _, errors = render_pptx(
             self.temp_input,
             self.context,

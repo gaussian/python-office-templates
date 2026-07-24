@@ -33,7 +33,9 @@ def process_text_list(
                     return make_float(r, fail_if_not_float)
                 return [make_float(ri, fail_if_not_float) for ri in r]
             except BadFloatDataResultError as e:
-                raise BadFloatDataResultError(f"Could not convert `{t}` to float => {e}")
+                raise BadFloatDataResultError(
+                    f"Could not convert `{t}` to float => {e}"
+                )
         return r
 
     items = list(items)

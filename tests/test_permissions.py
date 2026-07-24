@@ -59,7 +59,8 @@ class TestPermissions(unittest.TestCase):
 
     def test_enforce_permissions_single_value(self):
         # Create check_permissions lambda
-        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        def check_permissions(o):
+            return has_view_permission(o, self.request_user)
 
         # For a non-Django object, value is returned unchanged.
         val = "test value"
@@ -76,7 +77,8 @@ class TestPermissions(unittest.TestCase):
 
     def test_enforce_permissions_list(self):
         # Create check_permissions lambda
-        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        def check_permissions(o):
+            return has_view_permission(o, self.request_user)
 
         # Test on a list containing an allowed object and a denied object.
         values = [self.django_allowed, self.django_denied, self.non_django]
@@ -85,7 +87,8 @@ class TestPermissions(unittest.TestCase):
 
     def test_enforce_permissions_single_value_exception(self):
         # Create check_permissions lambda
-        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        def check_permissions(o):
+            return has_view_permission(o, self.request_user)
 
         # When permission is denied and raise_exception is True.
         with self.assertRaises(PermissionDeniedException):
@@ -96,7 +99,8 @@ class TestPermissions(unittest.TestCase):
 
     def test_enforce_permissions_list_exception(self):
         # Create check_permissions lambda
-        check_permissions = lambda o: has_view_permission(o, self.request_user)
+        def check_permissions(o):
+            return has_view_permission(o, self.request_user)
 
         values = [self.django_allowed, self.django_denied, self.non_django]
         with self.assertRaises(PermissionDeniedException):

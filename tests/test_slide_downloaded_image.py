@@ -36,9 +36,7 @@ class TestSlideDownloadedImage(unittest.TestCase):
         replace_shape_with_image(self.textbox, self.slide, context=self.context)
 
         # Only one non-placeholder shape should remain and it should be a picture
-        shapes = [
-            shape for shape in self.slide.shapes if not shape.is_placeholder
-        ]
+        shapes = [shape for shape in self.slide.shapes if not shape.is_placeholder]
         self.assertEqual(len(shapes), 1)
         pic = shapes[0]
         self.assertEqual(pic.shape_type, MSO_SHAPE_TYPE.PICTURE)
@@ -56,25 +54,37 @@ class TestSlideDownloadedImage(unittest.TestCase):
         """%image% should keep aspect ratio inside the shape."""
 
         # Create non-square shape
-        shape = self.slide.shapes.add_textbox(Inches(3), Inches(3), Inches(4), Inches(1))
+        shape = self.slide.shapes.add_textbox(
+            Inches(3), Inches(3), Inches(4), Inches(1)
+        )
         # Use explicit braces so the URL placeholder is passed through for processing
         shape.text_frame.text = "%image% {{ img }}"
 
         replace_shape_with_image(shape, self.slide, context=self.context)
 
-        pic = [s for s in self.slide.shapes if s.shape_type == MSO_SHAPE_TYPE.PICTURE][-1]
+        pic = [s for s in self.slide.shapes if s.shape_type == MSO_SHAPE_TYPE.PICTURE][
+            -1
+        ]
         self.assertEqual(pic.height, shape.height)
         self.assertLess(pic.width, shape.width)
 
     def test_placeholder_in_url(self):
         """URL expressions should be processed using process_text."""
 
-        shape = self.slide.shapes.add_textbox(Inches(5), Inches(1), Inches(2), Inches(2))
+        shape = self.slide.shapes.add_textbox(
+            Inches(5), Inches(1), Inches(2), Inches(2)
+        )
         shape.text_frame.text = "%imagesqueeze% {{ img }}"
 
         replace_shape_with_image(shape, self.slide, context=self.context)
 
-        pic = [s for s in self.slide.shapes if s.left == shape.left and s.top == shape.top and s.shape_type == MSO_SHAPE_TYPE.PICTURE]
+        pic = [
+            s
+            for s in self.slide.shapes
+            if s.left == shape.left
+            and s.top == shape.top
+            and s.shape_type == MSO_SHAPE_TYPE.PICTURE
+        ]
         self.assertEqual(len(pic), 1)
 
 

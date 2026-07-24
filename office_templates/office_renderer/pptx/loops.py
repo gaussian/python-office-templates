@@ -41,11 +41,11 @@ def extract_loop_directive(text: str | None) -> tuple[str | None, str | None]:
 def _check_shape_for_loop_directive(shape, pattern) -> bool:
     """
     Recursively check a shape (including grouped shapes) for loop directives.
-    
+
     Args:
         shape: Shape to check
         pattern: Regex pattern to match
-        
+
     Returns:
         True if the pattern is found in the shape or its sub-shapes
     """
@@ -55,7 +55,7 @@ def _check_shape_for_loop_directive(shape, pattern) -> bool:
             if _check_shape_for_loop_directive(grouped_shape, pattern):
                 return True
         return False
-    
+
     # Check individual shape
     if not hasattr(shape, "text_frame") or not hasattr(shape.text_frame, "text"):
         return False
@@ -75,7 +75,7 @@ def is_loop_start(shape) -> bool:
             if is_loop_start(grouped_shape):
                 return True
         return False
-    
+
     if not hasattr(shape, "text_frame") or not hasattr(shape.text_frame, "text"):
         return False
 
@@ -182,7 +182,9 @@ def process_loops(
                         errors.append(f"Error on slide {i + 1}: {error}")
                         return []
                 else:
-                    errors.append(f"Error on slide {i + 1}: Invalid loop start directive")
+                    errors.append(
+                        f"Error on slide {i + 1}: Invalid loop start directive"
+                    )
                     return []
 
             # Check for loop end
@@ -214,7 +216,6 @@ def process_loops(
 
         # Handle if in loop
         if in_loop:
-
             # Store slides, either in loop or not
             loop_slides.append(slide)
 
@@ -282,7 +283,7 @@ def process_loops(
 
     # Check for unclosed loops
     if in_loop:
-        errors.append(f"Error: Loop started but never closed with %endloop%")
+        errors.append("Error: Loop started but never closed with %endloop%")
         return []  # Short-circuit when unclosed loop found
 
     # Keep track of which slides are part of loops to avoid duplicating them
@@ -351,7 +352,7 @@ def process_loops(
 def _clear_loop_directives_from_shape(shape):
     """
     Recursively clear loop directives from a shape, handling grouped shapes.
-    
+
     Args:
         shape: Shape to process
     """
@@ -360,7 +361,7 @@ def _clear_loop_directives_from_shape(shape):
         for grouped_shape in shape.shapes:
             _clear_loop_directives_from_shape(grouped_shape)
         return
-    
+
     # Process individual shape
     if hasattr(shape, "text_frame") and hasattr(shape.text_frame, "text"):
         text = shape.text_frame.text.strip()

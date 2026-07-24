@@ -70,7 +70,9 @@ class TestProcessWorksheet(unittest.TestCase):
         ]
 
         # Call process_worksheet
-        check_permissions = lambda obj: has_view_permission(obj, self.request_user)
+        def check_permissions(obj):
+            return has_view_permission(obj, self.request_user)
+
         process_worksheet(
             worksheet=self.worksheet,
             context=self.context,

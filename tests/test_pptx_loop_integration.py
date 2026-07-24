@@ -120,11 +120,11 @@ class TestPptxIntegrationLoops(unittest.TestCase):
                 "office_templates.office_renderer.pptx.loops.is_loop_end"
             ) as mock_is_end:
                 # Configure mocks to return true only for specific slides
-                mock_is_start.side_effect = (
-                    lambda shape: shape.text_frame.text.startswith("%loop")
+                mock_is_start.side_effect = lambda shape: (
+                    shape.text_frame.text.startswith("%loop")
                 )
-                mock_is_end.side_effect = lambda shape: shape.text_frame.text.startswith(
-                    "%endloop"
+                mock_is_end.side_effect = lambda shape: (
+                    shape.text_frame.text.startswith("%endloop")
                 )
 
                 # Process loops
@@ -140,7 +140,10 @@ class TestPptxIntegrationLoops(unittest.TestCase):
     def test_dot_notation_processing(self, mock_presentation):
         """Test dot notation processing with minimal mocking."""
         # Setup a simplified test focusing on dot notation
-        from office_templates.office_renderer.pptx.loops import process_loops, resolve_tag
+        from office_templates.office_renderer.pptx.loops import (
+            process_loops,
+            resolve_tag,
+        )
 
         # Prepare context with dot notation
         context = {"program": {"members": ["Alice", "Bob"]}}
@@ -200,11 +203,11 @@ class TestPptxIntegrationLoops(unittest.TestCase):
                 "office_templates.office_renderer.pptx.loops.is_loop_end"
             ) as mock_is_end:
                 # Configure mocks to return true only for specific slides
-                mock_is_start.side_effect = (
-                    lambda shape: shape.text_frame.text.startswith("%loop")
+                mock_is_start.side_effect = lambda shape: (
+                    shape.text_frame.text.startswith("%loop")
                 )
-                mock_is_end.side_effect = lambda shape: shape.text_frame.text.startswith(
-                    "%endloop"
+                mock_is_end.side_effect = lambda shape: (
+                    shape.text_frame.text.startswith("%endloop")
                 )
 
                 # Test direct resolution of the dot notation path
