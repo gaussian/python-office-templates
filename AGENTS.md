@@ -11,6 +11,7 @@ populated or composed using provided context. Published to PyPI as
 - Lint + format: `uv run --all-extras ruff check office_templates/ tests/` and
   `ruff format --check office_templates/ tests/`
 - Default working branch: `develop`. Releases flow `develop` → `main`.
+- Dependency cooldown: a 7-day cooldown is set by `exclude-newer` under `[tool.uv]` in `pyproject.toml`. For an urgent fix, add `<pkg> = false` under `exclude-newer-package`, run `uv lock --upgrade-package <pkg>`, and remove the exemption once the release is over 7 days old.
 
 ## Opening PRs & versioning
 

@@ -62,6 +62,15 @@ A `develop` → `main` PR is a release — merging it triggers publishing to PyP
    git pull origin develop
    ```
 
+   The bump commit is pushed by `github-actions[bot]`, so the release PR's Checks run may end `action_required` without running. If so, re-run it as yourself:
+
+   ```
+   gh run list --workflow Checks --commit $(git rev-parse origin/develop) --json databaseId,conclusion
+   gh run rerun <databaseId>
+   ```
+
+   Wait for the checks to pass before merging.
+
 3. Merge with a merge commit — **do not squash**, and **do NOT pass
    `--delete-branch`** (it would delete `develop`):
 
