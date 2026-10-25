@@ -30,6 +30,10 @@ dev = [
     "ruff>=0.10",
 ]
 
+[tool.uv]
+# Dependency cooldown: never resolve a release under 7 days old.
+exclude-newer = "7 days"
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
