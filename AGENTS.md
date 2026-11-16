@@ -9,7 +9,8 @@ populated or composed using provided context. Published to PyPI as
 - Source: `office_templates/`
 - Tests: `tests/` (plain pytest, no framework) — `uv run --all-extras pytest`
 - Lint + format: `uv run --all-extras ruff check office_templates/ tests/` and
-  `ruff format --check office_templates/ tests/`
+  `uv run --all-extras ruff format --check office_templates/ tests/`
+- Type-check: none — no type checker is configured, and CI doesn't run one.
 - Default working branch: `develop`. Releases flow `develop` → `main`.
 - Dependency cooldown: a 7-day cooldown is set by `exclude-newer` under `[tool.uv]` in `pyproject.toml`. For an urgent fix, add `<pkg> = false` under `exclude-newer-package`, run `uv lock --upgrade-package <pkg>`, and remove the exemption once the release is over 7 days old.
 
@@ -21,5 +22,6 @@ The version is a static string in `pyproject.toml` and `uv.lock` (there is no
 automatically on merge — it must be bumped deliberately, or no release is cut.
 Publishing to PyPI is automatic once a `develop` → `main` PR merges.
 
-**Follow the `create-merge-pr` skill** (`.agents/skills/create-merge-pr/`) for the
-full PR workflow, including when and how to bump the version.
+**Follow the `create-merge-pr` skill** (the machine-wide skill, installed by
+lobster into `~/.agents/skills/create-merge-pr/`) for the full PR workflow,
+including when and how to bump the version.
